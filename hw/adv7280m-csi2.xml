@@ -2,13 +2,13 @@
 <export version="E">
   <design>
     <source>/home/user/adv/hw/adv7280m-csi2.kicad_sch</source>
-    <date>2026-09-20T10:13:51+0000</date>
+    <date>2026-09-20T10:57:50+0000</date>
     <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
         <title>CVBS to MIPI CSI-2 video decoder (ADV7280-M) for Raspberry Pi 4</title>
         <company/>
-        <rev>A</rev>
+        <rev>B</rev>
         <date>2026-09-20</date>
         <source>adv7280m-csi2.kicad_sch</source>
         <comment number="1" value="Target: Raspberry Pi 4 CSI camera port, dtoverlay=adv728x-m,adv7280m=1"/>
@@ -444,6 +444,126 @@
       <sheetpath names="/" tstamps="/"/>
       <tstamps>ba1ac96d-1f30-5b72-8059-0d80f9909d48</tstamps>
     </comp>
+    <comp ref="C23">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>CH1 input coupling, sync-tip clamp mode (SLOS513A Fig. 34), 50 V X7R</description>
+      <fields>
+        <field name="LCSC">C14663</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">CH1 input coupling, sync-tip clamp mode (SLOS513A Fig. 34), 50 V X7R</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="LCSC" value="C14663"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8717b031-2aca-5231-ab86-f686df8e6172</tstamps>
+    </comp>
+    <comp ref="C24">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>CH2 input coupling, sync-tip clamp mode (SLOS513A Fig. 34), 50 V X7R</description>
+      <fields>
+        <field name="LCSC">C14663</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">CH2 input coupling, sync-tip clamp mode (SLOS513A Fig. 34), 50 V X7R</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="LCSC" value="C14663"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7d0a5e8a-7afe-58f9-8ee2-46d7a24d1a64</tstamps>
+    </comp>
+    <comp ref="C25">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>CH3 input coupling, sync-tip clamp mode (SLOS513A Fig. 34), 50 V X7R</description>
+      <fields>
+        <field name="LCSC">C14663</field>
+        <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">CH3 input coupling, sync-tip clamp mode (SLOS513A Fig. 34), 50 V X7R</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="LCSC" value="C14663"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>5c2cf270-60ea-57de-9d7b-2d8f901b7fb5</tstamps>
+    </comp>
+    <comp ref="C26">
+      <value>100nF</value>
+      <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>VS+ decoupling at pin 4 (SLOS513A: 0.1 uF as close as possible)</description>
+      <fields>
+        <field name="LCSC">C1525</field>
+        <field name="Footprint">Capacitor_SMD:C_0402_1005Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">VS+ decoupling at pin 4 (SLOS513A: 0.1 uF as close as possible)</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="LCSC" value="C1525"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c0a45022-7aa1-50ce-8674-5220cebfb05b</tstamps>
+    </comp>
+    <comp ref="C27">
+      <value>10uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>VS+ bulk, 25 V X5R 0805</description>
+      <fields>
+        <field name="LCSC">C15850</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">VS+ bulk, 25 V X5R 0805</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="LCSC" value="C15850"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9a74dee5-4b9e-5431-bb16-baa1f7fe449a</tstamps>
+    </comp>
+    <comp ref="C28">
+      <value>22uF</value>
+      <footprint>Capacitor_SMD:C_0805_2012Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Bulk after D2, 25 V X5R 0805 (SLOS513A: 22-100 uF on supply)</description>
+      <fields>
+        <field name="LCSC">C45783</field>
+        <field name="Footprint">Capacitor_SMD:C_0805_2012Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Bulk after D2, 25 V X5R 0805 (SLOS513A: 22-100 uF on supply)</field>
+      </fields>
+      <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
+      <property name="LCSC" value="C45783"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="cap capacitor"/>
+      <property name="ki_fp_filters" value="C_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>85e47a32-e715-5ecc-be6c-6717b4cf26e1</tstamps>
+    </comp>
     <comp ref="D1">
       <value>TPD1E10B06</value>
       <footprint>adv-parts:TI_X1SON-2_DPY0002A_1.0x0.6mm</footprint>
@@ -463,6 +583,46 @@
       <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>f674c433-c449-5ad6-af87-d919b700602f</tstamps>
+    </comp>
+    <comp ref="D2">
+      <value>SS14</value>
+      <footprint>Diode_SMD:D_SMA</footprint>
+      <datasheet>~</datasheet>
+      <description>Reverse-polarity protection, 1 A, Vf ~0.4 V at 20 mA</description>
+      <fields>
+        <field name="LCSC">C2480</field>
+        <field name="Footprint">Diode_SMD:D_SMA</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Reverse-polarity protection, 1 A, Vf ~0.4 V at 20 mA</field>
+      </fields>
+      <libsource lib="Device" part="D_Schottky" description="Schottky diode"/>
+      <property name="LCSC" value="C2480"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="diode Schottky"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9838732f-1aca-513c-95bc-3d13c5aec29a</tstamps>
+    </comp>
+    <comp ref="D3">
+      <value>TPD1E10B06</value>
+      <footprint>adv-parts:TI_X1SON-2_DPY0002A_1.0x0.6mm</footprint>
+      <datasheet>~</datasheet>
+      <description>ESD TVS on buffer input, 12 pF</description>
+      <fields>
+        <field name="LCSC">C48260</field>
+        <field name="Footprint">adv-parts:TI_X1SON-2_DPY0002A_1.0x0.6mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">ESD TVS on buffer input, 12 pF</field>
+      </fields>
+      <libsource lib="Device" part="D_TVS" description="Bidirectional transient-voltage-suppression diode"/>
+      <property name="LCSC" value="C48260"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="diode TVS thyrector"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>73127249-fde1-5f69-9167-2ca5971bb9c9</tstamps>
     </comp>
     <comp ref="FB1">
       <value>120R@100MHz</value>
@@ -485,6 +645,28 @@
       <property name="ki_fp_filters" value="Inductor_* L_* *Ferrite*"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>49f5ba29-268a-5daf-a103-1a769de7b269</tstamps>
+    </comp>
+    <comp ref="FB2">
+      <value>120R@100MHz</value>
+      <footprint>Inductor_SMD:L_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>BLM18PG121SN1D, DC-DC ripple filter</description>
+      <fields>
+        <field name="LCSC">C14709</field>
+        <field name="MPN">BLM18PG121SN1D</field>
+        <field name="Footprint">Inductor_SMD:L_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">BLM18PG121SN1D, DC-DC ripple filter</field>
+      </fields>
+      <libsource lib="Device" part="FerriteBead" description="Ferrite bead"/>
+      <property name="LCSC" value="C14709"/>
+      <property name="MPN" value="BLM18PG121SN1D"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="L ferrite bead inductor filter"/>
+      <property name="ki_fp_filters" value="Inductor_* L_* *Ferrite*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f3bafb56-5cb6-5490-8bdf-5e4de52966d5</tstamps>
     </comp>
     <comp ref="H1">
       <value>M2</value>
@@ -527,6 +709,48 @@
       <property name="ki_fp_filters" value="MountingHole*"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>8b60fea1-0dee-5c27-9d33-d939bd32c8ed</tstamps>
+    </comp>
+    <comp ref="H3">
+      <value>M2</value>
+      <footprint>MountingHole:MountingHole_2.2mm_M2</footprint>
+      <datasheet>~</datasheet>
+      <description>Mounting hole, buffer section</description>
+      <fields>
+        <field name="LCSC"/>
+        <field name="Footprint">MountingHole:MountingHole_2.2mm_M2</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Mounting hole, buffer section</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole" description="Mounting Hole without connection"/>
+      <property name="LCSC" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>40a9eff4-2a28-5b27-a467-03d57f152d9e</tstamps>
+    </comp>
+    <comp ref="H4">
+      <value>M2</value>
+      <footprint>MountingHole:MountingHole_2.2mm_M2</footprint>
+      <datasheet>~</datasheet>
+      <description>Mounting hole, buffer section</description>
+      <fields>
+        <field name="LCSC"/>
+        <field name="Footprint">MountingHole:MountingHole_2.2mm_M2</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Mounting hole, buffer section</field>
+      </fields>
+      <libsource lib="Mechanical" part="MountingHole" description="Mounting Hole without connection"/>
+      <property name="LCSC" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="exclude_from_bom"/>
+      <property name="ki_keywords" value="mounting hole"/>
+      <property name="ki_fp_filters" value="MountingHole*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9844e6ae-112e-50d3-8510-8fd23e0b4469</tstamps>
     </comp>
     <comp ref="J1">
       <value>RPi_CSI_15pin</value>
@@ -573,6 +797,126 @@
       <property name="ki_fp_filters" value="*BNC* *SMA* *SMB* *SMC* *Cinch* *LEMO* *UMRF* *MCX* *U.FL*"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>765c6bb8-f233-5952-ab90-f53202be2f04</tstamps>
+    </comp>
+    <comp ref="J4">
+      <value>5V_IN</value>
+      <footprint>TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</footprint>
+      <datasheet>~</datasheet>
+      <description>Screw terminal 5.08 mm, 5 V from external DC-DC module (hand-soldered)</description>
+      <fields>
+        <field name="LCSC">C474881</field>
+        <field name="Assemble">no</field>
+        <field name="MPN">KF301-5.0-2P</field>
+        <field name="Footprint">TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Screw terminal 5.08 mm, 5 V from external DC-DC module (hand-soldered)</field>
+      </fields>
+      <libsource lib="Connector" part="Screw_Terminal_01x02" description="Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="LCSC" value="C474881"/>
+      <property name="Assemble" value="no"/>
+      <property name="MPN" value="KF301-5.0-2P"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="screw terminal"/>
+      <property name="ki_fp_filters" value="TerminalBlock*:*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e4dcdf93-7b79-5a82-b579-9ec6e68fc371</tstamps>
+    </comp>
+    <comp ref="J5">
+      <value>CVBS_IN_HDR</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <description>CVBS source input, 2.54 mm pin header (1 = signal, 2 = GND), hand-soldered</description>
+      <fields>
+        <field name="LCSC">C492401</field>
+        <field name="Assemble">no</field>
+        <field name="MPN">PZ254V-11-02P</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">CVBS source input, 2.54 mm pin header (1 = signal, 2 = GND), hand-soldered</field>
+      </fields>
+      <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="LCSC" value="C492401"/>
+      <property name="Assemble" value="no"/>
+      <property name="MPN" value="PZ254V-11-02P"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>482ad8c0-d60c-5a1c-a9ca-0079fe250e50</tstamps>
+    </comp>
+    <comp ref="J6">
+      <value>MON1_HDR</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <description>CVBS to monitor 1, 2.54 mm pin header (1 = signal, 2 = GND), hand-soldered</description>
+      <fields>
+        <field name="LCSC">C492401</field>
+        <field name="Assemble">no</field>
+        <field name="MPN">PZ254V-11-02P</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">CVBS to monitor 1, 2.54 mm pin header (1 = signal, 2 = GND), hand-soldered</field>
+      </fields>
+      <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="LCSC" value="C492401"/>
+      <property name="Assemble" value="no"/>
+      <property name="MPN" value="PZ254V-11-02P"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>9fc9ee79-3872-5d7c-810f-7c3f7b6f93a5</tstamps>
+    </comp>
+    <comp ref="J7">
+      <value>MON2_HDR</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <description>CVBS to monitor 2, 2.54 mm pin header (1 = signal, 2 = GND), hand-soldered</description>
+      <fields>
+        <field name="LCSC">C492401</field>
+        <field name="Assemble">no</field>
+        <field name="MPN">PZ254V-11-02P</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">CVBS to monitor 2, 2.54 mm pin header (1 = signal, 2 = GND), hand-soldered</field>
+      </fields>
+      <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="LCSC" value="C492401"/>
+      <property name="Assemble" value="no"/>
+      <property name="MPN" value="PZ254V-11-02P"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>6ee4fdee-4781-5df9-bade-2e446b33a498</tstamps>
+    </comp>
+    <comp ref="J8">
+      <value>CVBS_BUF_HDR</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <datasheet>~</datasheet>
+      <description>Buffered CVBS to decoder when the section is snapped off (1 = signal, 2 = GND), hand-soldered</description>
+      <fields>
+        <field name="LCSC">C492401</field>
+        <field name="Assemble">no</field>
+        <field name="MPN">PZ254V-11-02P</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Buffered CVBS to decoder when the section is snapped off (1 = signal, 2 = GND), hand-soldered</field>
+      </fields>
+      <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="LCSC" value="C492401"/>
+      <property name="Assemble" value="no"/>
+      <property name="MPN" value="PZ254V-11-02P"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a0ff00f9-4fa9-53f0-bcb8-5a200db9fe6b</tstamps>
     </comp>
     <comp ref="JP1">
       <value>ALSB&gt;GND</value>
@@ -633,6 +977,26 @@
       <property name="ki_fp_filters" value="SolderJumper*Open*"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>7571ff2f-d3ec-5556-9f9e-c50c7160b46b</tstamps>
+    </comp>
+    <comp ref="JP4">
+      <value>BUF&gt;ADV</value>
+      <footprint>Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Bridged by default: buffer CH1 -&gt; decoder input node. Cut to use J2 while boards are joined</description>
+      <fields>
+        <field name="LCSC"/>
+        <field name="Footprint">Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Bridged by default: buffer CH1 -&gt; decoder input node. Cut to use J2 while boards are joined</field>
+      </fields>
+      <libsource lib="Jumper" part="SolderJumper_2_Bridged" description="Solder Jumper, 2-pole, closed/bridged"/>
+      <property name="LCSC" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="solder jumper SPST"/>
+      <property name="ki_fp_filters" value="SolderJumper*Bridged*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ba5b1af2-86df-5b54-a8c6-4825f30c1141</tstamps>
     </comp>
     <comp ref="R1">
       <value>22</value>
@@ -773,6 +1137,86 @@
       <property name="ki_fp_filters" value="R_*"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>c3f4c3d8-6025-5557-ba46-39c371443dcd</tstamps>
+    </comp>
+    <comp ref="R8">
+      <value>75</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>Input termination 75 R</description>
+      <fields>
+        <field name="LCSC">C4275</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Input termination 75 R</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C4275"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>4d3b6aa3-0dcb-59b0-ad10-972def94e979</tstamps>
+    </comp>
+    <comp ref="R9">
+      <value>75</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>CH1 back-termination -&gt; decoder</description>
+      <fields>
+        <field name="LCSC">C4275</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">CH1 back-termination -&gt; decoder</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C4275"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>2c644b12-6489-5a2c-bb72-29a88efa6345</tstamps>
+    </comp>
+    <comp ref="R10">
+      <value>75</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>CH2 back-termination -&gt; monitor 1</description>
+      <fields>
+        <field name="LCSC">C4275</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">CH2 back-termination -&gt; monitor 1</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C4275"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ede9eb0e-9c2a-57e6-a3a9-c136e12070fd</tstamps>
+    </comp>
+    <comp ref="R11">
+      <value>75</value>
+      <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
+      <datasheet>~</datasheet>
+      <description>CH3 back-termination -&gt; monitor 2</description>
+      <fields>
+        <field name="LCSC">C4275</field>
+        <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">CH3 back-termination -&gt; monitor 2</field>
+      </fields>
+      <libsource lib="Device" part="R" description="Resistor"/>
+      <property name="LCSC" value="C4275"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="R res resistor"/>
+      <property name="ki_fp_filters" value="R_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>95389050-105f-5d4b-8365-af25c02ab49f</tstamps>
     </comp>
     <comp ref="TP1">
       <value>3V3</value>
@@ -934,6 +1378,26 @@
       <sheetpath names="/" tstamps="/"/>
       <tstamps>9527c286-1c8f-5b1b-8c3b-80e3e37b252b</tstamps>
     </comp>
+    <comp ref="TP9">
+      <value>VS_BUF</value>
+      <footprint>TestPoint:TestPoint_Pad_D1.5mm</footprint>
+      <datasheet>~</datasheet>
+      <description>Buffer supply test point</description>
+      <fields>
+        <field name="LCSC"/>
+        <field name="Footprint">TestPoint:TestPoint_Pad_D1.5mm</field>
+        <field name="Datasheet">~</field>
+        <field name="Description">Buffer supply test point</field>
+      </fields>
+      <libsource lib="Connector" part="TestPoint" description="test point"/>
+      <property name="LCSC" value=""/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="test point tp"/>
+      <property name="ki_fp_filters" value="Pin* Test*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>40384d99-2aa9-5c06-bc02-bc0f46cc94ee</tstamps>
+    </comp>
     <comp ref="U1">
       <value>ADV7280WBCPZ-M</value>
       <footprint>Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.6x3.6mm</footprint>
@@ -1004,6 +1468,30 @@
       <sheetpath names="/" tstamps="/"/>
       <tstamps>92d91c6f-3628-5667-a1a6-c68c98c7ce83</tstamps>
     </comp>
+    <comp ref="U5">
+      <value>THS7314DR</value>
+      <footprint>Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</footprint>
+      <datasheet>https://www.ti.com/lit/ds/symlink/ths7314.pdf</datasheet>
+      <description>3-ch SDTV video amplifier, 6 dB, 8.5 MHz LPF, sync-tip clamp, SOIC-8</description>
+      <fields>
+        <field name="LCSC">C882751</field>
+        <field name="Manufacturer">Texas Instruments</field>
+        <field name="MPN">THS7314DR</field>
+        <field name="Footprint">Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/ths7314.pdf</field>
+        <field name="Description">3-ch SDTV video amplifier, 6 dB, 8.5 MHz LPF, sync-tip clamp, SOIC-8</field>
+      </fields>
+      <libsource lib="adv-parts" part="THS7314" description="3-channel SDTV video amplifier, 6 dB, 5th-order 8.5 MHz LPF, sync-tip clamp, 3-5 V, SOIC-8"/>
+      <property name="LCSC" value="C882751"/>
+      <property name="Manufacturer" value="Texas Instruments"/>
+      <property name="MPN" value="THS7314DR"/>
+      <property name="Sheetname" value=""/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="video amplifier buffer CVBS filter"/>
+      <property name="ki_fp_filters" value="SOIC*3.9x4.9mm*P1.27mm*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>07b33622-30a7-5e41-8ab8-b255c71609fe</tstamps>
+    </comp>
     <comp ref="Y1">
       <value>28.63636MHz</value>
       <footprint>Crystal:Crystal_SMD_5032-2Pin_5.0x3.2mm</footprint>
@@ -1054,6 +1542,24 @@
         <pin num="2" name="Ext" type="passive"/>
       </pins>
     </libpart>
+    <libpart lib="Connector" part="Screw_Terminal_01x02">
+      <description>Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TerminalBlock*:*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Screw_Terminal_01x02</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+      </pins>
+    </libpart>
     <libpart lib="Connector" part="TestPoint">
       <description>test point</description>
       <docs>~</docs>
@@ -1070,6 +1576,24 @@
       </fields>
       <pins>
         <pin num="1" name="1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Connector_Generic" part="Conn_01x02">
+      <description>Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_1x??_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x02</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
       </pins>
     </libpart>
     <libpart lib="Connector_Generic" part="Conn_01x15">
@@ -1139,6 +1663,27 @@
         <pin num="2" name="2" type="passive"/>
       </pins>
     </libpart>
+    <libpart lib="Device" part="D_Schottky">
+      <description>Schottky diode</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_Schottky</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Schottky diode</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
     <libpart lib="Device" part="D_TVS">
       <description>Bidirectional transient-voltage-suppression diode</description>
       <docs>~</docs>
@@ -1196,6 +1741,24 @@
       <pins>
         <pin num="1" name="" type="passive"/>
         <pin num="2" name="" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Jumper" part="SolderJumper_2_Bridged">
+      <description>Solder Jumper, 2-pole, closed/bridged</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>SolderJumper*Bridged*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">JP</field>
+        <field name="Value">SolderJumper_2_Bridged</field>
+        <field name="Footprint"/>
+        <field name="Datasheet">~</field>
+        <field name="Description">Solder Jumper, 2-pole, closed/bridged</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A" type="passive"/>
+        <pin num="2" name="B" type="passive"/>
       </pins>
     </libpart>
     <libpart lib="Jumper" part="SolderJumper_2_Open">
@@ -1300,6 +1863,30 @@
         <pin num="33" name="EP" type="passive"/>
       </pins>
     </libpart>
+    <libpart lib="adv-parts" part="THS7314">
+      <description>3-channel SDTV video amplifier, 6 dB, 5th-order 8.5 MHz LPF, sync-tip clamp, 3-5 V, SOIC-8</description>
+      <docs>https://www.ti.com/lit/ds/symlink/ths7314.pdf</docs>
+      <footprints>
+        <fp>SOIC*3.9x4.9mm*P1.27mm*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">THS7314</field>
+        <field name="Footprint">Package_SO:SOIC-8_3.9x4.9mm_P1.27mm</field>
+        <field name="Datasheet">https://www.ti.com/lit/ds/symlink/ths7314.pdf</field>
+        <field name="Description">3-channel SDTV video amplifier, 6 dB, 5th-order 8.5 MHz LPF, sync-tip clamp, 3-5 V, SOIC-8</field>
+      </fields>
+      <pins>
+        <pin num="1" name="CH1_IN" type="input"/>
+        <pin num="2" name="CH2_IN" type="input"/>
+        <pin num="3" name="CH3_IN" type="input"/>
+        <pin num="4" name="VS+" type="power_in"/>
+        <pin num="5" name="GND" type="power_in"/>
+        <pin num="6" name="CH3_OUT" type="output"/>
+        <pin num="7" name="CH2_OUT" type="output"/>
+        <pin num="8" name="CH1_OUT" type="output"/>
+      </pins>
+    </libpart>
   </libparts>
   <libraries>
     <library logical="Connector">
@@ -1364,62 +1951,100 @@
       <node ref="U3" pin="1" pinfunction="VIN" pintype="power_in"/>
       <node ref="U3" pin="3" pinfunction="EN" pintype="input"/>
     </net>
-    <net code="4" name="/ALSB" class="Default">
+    <net code="4" name="/5V_BUF" class="Default">
+      <node ref="C28" pin="1" pintype="passive"/>
+      <node ref="D2" pin="1" pinfunction="K" pintype="passive"/>
+      <node ref="FB2" pin="1" pintype="passive"/>
+    </net>
+    <net code="5" name="/5V_IN" class="Default">
+      <node ref="D2" pin="2" pinfunction="A" pintype="passive"/>
+      <node ref="J4" pin="1" pinfunction="Pin_1" pintype="passive"/>
+    </net>
+    <net code="6" name="/ALSB" class="Default">
       <node ref="JP1" pin="2" pinfunction="B" pintype="passive"/>
       <node ref="R5" pin="2" pintype="passive"/>
       <node ref="U1" pin="29" pinfunction="ALSB" pintype="input"/>
     </net>
-    <net code="5" name="/CAM_GPIO" class="Default">
+    <net code="7" name="/CAM_GPIO" class="Default">
       <node ref="J1" pin="11" pinfunction="Pin_11" pintype="passive"/>
       <node ref="JP2" pin="2" pinfunction="B" pintype="passive"/>
       <node ref="JP3" pin="2" pinfunction="B" pintype="passive"/>
     </net>
-    <net code="6" name="/CSI_CLKN" class="MIPI">
+    <net code="8" name="/CSI_CLKN" class="MIPI">
       <node ref="J1" pin="8" pinfunction="Pin_8" pintype="passive"/>
       <node ref="U1" pin="12" pinfunction="CLKN" pintype="output"/>
     </net>
-    <net code="7" name="/CSI_CLKP" class="MIPI">
+    <net code="9" name="/CSI_CLKP" class="MIPI">
       <node ref="J1" pin="9" pinfunction="Pin_9" pintype="passive"/>
       <node ref="U1" pin="11" pinfunction="CLKP" pintype="output"/>
     </net>
-    <net code="8" name="/CSI_D0N" class="MIPI">
+    <net code="10" name="/CSI_D0N" class="MIPI">
       <node ref="J1" pin="2" pinfunction="Pin_2" pintype="passive"/>
       <node ref="U1" pin="10" pinfunction="D0N" pintype="output"/>
     </net>
-    <net code="9" name="/CSI_D0P" class="MIPI">
+    <net code="11" name="/CSI_D0P" class="MIPI">
       <node ref="J1" pin="3" pinfunction="Pin_3" pintype="passive"/>
       <node ref="U1" pin="9" pinfunction="D0P" pintype="output"/>
     </net>
-    <net code="10" name="/CVBS_IN" class="Default">
+    <net code="12" name="/CVBS_BUF" class="Default">
+      <node ref="J8" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="JP4" pin="1" pinfunction="A" pintype="passive"/>
+      <node ref="R9" pin="2" pintype="passive"/>
+    </net>
+    <net code="13" name="/CVBS_IN" class="Default">
       <node ref="D1" pin="1" pinfunction="A1" pintype="passive"/>
       <node ref="J2" pin="1" pinfunction="In" pintype="passive"/>
+      <node ref="JP4" pin="2" pinfunction="B" pintype="passive"/>
       <node ref="R1" pin="1" pintype="passive"/>
     </net>
-    <net code="11" name="/PWRDWN" class="Default">
+    <net code="14" name="/CVBS_SRC" class="Default">
+      <node ref="C23" pin="1" pintype="passive"/>
+      <node ref="C24" pin="1" pintype="passive"/>
+      <node ref="C25" pin="1" pintype="passive"/>
+      <node ref="D3" pin="1" pinfunction="A1" pintype="passive"/>
+      <node ref="J5" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="R8" pin="1" pintype="passive"/>
+    </net>
+    <net code="15" name="/MON1" class="Default">
+      <node ref="J6" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="R10" pin="2" pintype="passive"/>
+    </net>
+    <net code="16" name="/MON2" class="Default">
+      <node ref="J7" pin="1" pinfunction="Pin_1" pintype="passive"/>
+      <node ref="R11" pin="2" pintype="passive"/>
+    </net>
+    <net code="17" name="/PWRDWN" class="Default">
       <node ref="JP3" pin="1" pinfunction="A" pintype="passive"/>
       <node ref="R4" pin="2" pintype="passive"/>
       <node ref="U1" pin="32" pinfunction="~{PWRDWN}" pintype="input"/>
     </net>
-    <net code="12" name="/SCL" class="Default">
+    <net code="18" name="/SCL" class="Default">
       <node ref="J1" pin="13" pinfunction="Pin_13" pintype="passive"/>
       <node ref="R7" pin="2" pintype="passive"/>
       <node ref="TP4" pin="1" pinfunction="1" pintype="passive"/>
       <node ref="U1" pin="31" pinfunction="SCLK" pintype="input"/>
     </net>
-    <net code="13" name="/SDA" class="Default">
+    <net code="19" name="/SDA" class="Default">
       <node ref="J1" pin="14" pinfunction="Pin_14" pintype="passive"/>
       <node ref="R6" pin="2" pintype="passive"/>
       <node ref="TP3" pin="1" pinfunction="1" pintype="passive"/>
       <node ref="U1" pin="30" pinfunction="SDATA" pintype="bidirectional"/>
     </net>
-    <net code="14" name="/~{RESET}" class="Default">
+    <net code="20" name="/VS_BUF" class="Default">
+      <node ref="C26" pin="1" pintype="passive"/>
+      <node ref="C27" pin="1" pintype="passive"/>
+      <node ref="FB2" pin="2" pintype="passive"/>
+      <node ref="TP9" pin="1" pinfunction="1" pintype="passive"/>
+      <node ref="U5" pin="4" pinfunction="VS+" pintype="power_in"/>
+    </net>
+    <net code="21" name="/~{RESET}" class="Default">
       <node ref="C5" pin="1" pintype="passive"/>
       <node ref="JP2" pin="1" pinfunction="A" pintype="passive"/>
       <node ref="R3" pin="2" pintype="passive"/>
       <node ref="TP5" pin="1" pinfunction="1" pintype="passive"/>
       <node ref="U1" pin="28" pinfunction="~{RESET}" pintype="input"/>
     </net>
-    <net code="15" name="GND" class="Power">
+    <net code="22" name="GND" class="Power">
       <node ref="C10" pin="2" pintype="passive"/>
       <node ref="C11" pin="2" pintype="passive"/>
       <node ref="C13" pin="2" pintype="passive"/>
@@ -1433,6 +2058,9 @@
       <node ref="C20" pin="2" pintype="passive"/>
       <node ref="C21" pin="2" pintype="passive"/>
       <node ref="C22" pin="2" pintype="passive"/>
+      <node ref="C26" pin="2" pintype="passive"/>
+      <node ref="C27" pin="2" pintype="passive"/>
+      <node ref="C28" pin="2" pintype="passive"/>
       <node ref="C3" pin="1" pintype="passive"/>
       <node ref="C5" pin="2" pintype="passive"/>
       <node ref="C6" pin="2" pintype="passive"/>
@@ -1440,101 +2068,133 @@
       <node ref="C8" pin="2" pintype="passive"/>
       <node ref="C9" pin="2" pintype="passive"/>
       <node ref="D1" pin="2" pinfunction="A2" pintype="passive"/>
+      <node ref="D3" pin="2" pinfunction="A2" pintype="passive"/>
       <node ref="J1" pin="1" pinfunction="Pin_1" pintype="passive"/>
       <node ref="J1" pin="10" pinfunction="Pin_10" pintype="passive"/>
       <node ref="J1" pin="4" pinfunction="Pin_4" pintype="passive"/>
       <node ref="J1" pin="7" pinfunction="Pin_7" pintype="passive"/>
       <node ref="J2" pin="2" pinfunction="Ext" pintype="passive"/>
+      <node ref="J4" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="J5" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="J6" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="J7" pin="2" pinfunction="Pin_2" pintype="passive"/>
+      <node ref="J8" pin="2" pinfunction="Pin_2" pintype="passive"/>
       <node ref="JP1" pin="1" pinfunction="A" pintype="passive"/>
       <node ref="R2" pin="2" pintype="passive"/>
+      <node ref="R8" pin="2" pintype="passive"/>
       <node ref="TP6" pin="1" pinfunction="1" pintype="passive"/>
       <node ref="U1" pin="1" pinfunction="DGND" pintype="power_in"/>
       <node ref="U1" pin="33" pinfunction="EP" pintype="passive"/>
       <node ref="U1" pin="4" pinfunction="DGND" pintype="power_in"/>
       <node ref="U2" pin="2" pinfunction="GND" pintype="power_in"/>
       <node ref="U3" pin="2" pinfunction="GND" pintype="power_in"/>
+      <node ref="U5" pin="5" pinfunction="GND" pintype="power_in"/>
     </net>
-    <net code="16" name="Net-(C1-Pad1)" class="Default">
+    <net code="23" name="Net-(C1-Pad1)" class="Default">
       <node ref="C1" pin="1" pintype="passive"/>
       <node ref="R1" pin="2" pintype="passive"/>
       <node ref="R2" pin="1" pintype="passive"/>
       <node ref="TP7" pin="1" pinfunction="1" pintype="passive"/>
     </net>
-    <net code="17" name="Net-(U1-AIN1)" class="Default">
+    <net code="24" name="Net-(U1-AIN1)" class="Default">
       <node ref="C1" pin="2" pintype="passive"/>
       <node ref="U1" pin="17" pinfunction="AIN1" pintype="passive"/>
     </net>
-    <net code="18" name="Net-(U1-VREFN)" class="Default">
+    <net code="25" name="Net-(U1-VREFN)" class="Default">
       <node ref="C4" pin="2" pintype="passive"/>
       <node ref="U1" pin="20" pinfunction="VREFN" pintype="passive"/>
     </net>
-    <net code="19" name="Net-(U1-VREFP)" class="Default">
+    <net code="26" name="Net-(U1-VREFP)" class="Default">
       <node ref="C4" pin="1" pintype="passive"/>
       <node ref="U1" pin="19" pinfunction="VREFP" pintype="passive"/>
     </net>
-    <net code="20" name="Net-(U1-XTALN)" class="Default">
+    <net code="27" name="Net-(U1-XTALN)" class="Default">
       <node ref="C3" pin="2" pintype="passive"/>
       <node ref="U1" pin="15" pinfunction="XTALN" pintype="passive"/>
       <node ref="Y1" pin="1" pinfunction="1" pintype="passive"/>
     </net>
-    <net code="21" name="Net-(U1-XTALP)" class="Default">
+    <net code="28" name="Net-(U1-XTALP)" class="Default">
       <node ref="C2" pin="2" pintype="passive"/>
       <node ref="U1" pin="14" pinfunction="XTALP" pintype="passive"/>
       <node ref="Y1" pin="2" pinfunction="2" pintype="passive"/>
     </net>
-    <net code="22" name="PVDD" class="Power">
+    <net code="29" name="Net-(U5-CH1_IN)" class="Default">
+      <node ref="C23" pin="2" pintype="passive"/>
+      <node ref="U5" pin="1" pinfunction="CH1_IN" pintype="input"/>
+    </net>
+    <net code="30" name="Net-(U5-CH1_OUT)" class="Default">
+      <node ref="R9" pin="1" pintype="passive"/>
+      <node ref="U5" pin="8" pinfunction="CH1_OUT" pintype="output"/>
+    </net>
+    <net code="31" name="Net-(U5-CH2_IN)" class="Default">
+      <node ref="C24" pin="2" pintype="passive"/>
+      <node ref="U5" pin="2" pinfunction="CH2_IN" pintype="input"/>
+    </net>
+    <net code="32" name="Net-(U5-CH2_OUT)" class="Default">
+      <node ref="R10" pin="1" pintype="passive"/>
+      <node ref="U5" pin="7" pinfunction="CH2_OUT" pintype="output"/>
+    </net>
+    <net code="33" name="Net-(U5-CH3_IN)" class="Default">
+      <node ref="C25" pin="2" pintype="passive"/>
+      <node ref="U5" pin="3" pinfunction="CH3_IN" pintype="input"/>
+    </net>
+    <net code="34" name="Net-(U5-CH3_OUT)" class="Default">
+      <node ref="R11" pin="1" pintype="passive"/>
+      <node ref="U5" pin="6" pinfunction="CH3_OUT" pintype="output"/>
+    </net>
+    <net code="35" name="PVDD" class="Power">
       <node ref="C11" pin="1" pintype="passive"/>
       <node ref="C21" pin="1" pintype="passive"/>
       <node ref="C22" pin="1" pintype="passive"/>
       <node ref="FB1" pin="2" pintype="passive"/>
       <node ref="U1" pin="16" pinfunction="PVDD" pintype="power_in"/>
     </net>
-    <net code="23" name="unconnected-(J1-Pin_5-Pad5)" class="Default">
+    <net code="36" name="unconnected-(J1-Pin_5-Pad5)" class="Default">
       <node ref="J1" pin="5" pinfunction="Pin_5" pintype="passive+no_connect"/>
     </net>
-    <net code="24" name="unconnected-(J1-Pin_6-Pad6)" class="Default">
+    <net code="37" name="unconnected-(J1-Pin_6-Pad6)" class="Default">
       <node ref="J1" pin="6" pinfunction="Pin_6" pintype="passive+no_connect"/>
     </net>
-    <net code="25" name="unconnected-(J1-Pin_12-Pad12)" class="Default">
+    <net code="38" name="unconnected-(J1-Pin_12-Pad12)" class="Default">
       <node ref="J1" pin="12" pinfunction="Pin_12" pintype="passive+no_connect"/>
     </net>
-    <net code="26" name="unconnected-(U1-AIN2-Pad18)" class="Default">
+    <net code="39" name="unconnected-(U1-AIN2-Pad18)" class="Default">
       <node ref="U1" pin="18" pinfunction="AIN2" pintype="passive+no_connect"/>
     </net>
-    <net code="27" name="unconnected-(U1-AIN3-Pad22)" class="Default">
+    <net code="40" name="unconnected-(U1-AIN3-Pad22)" class="Default">
       <node ref="U1" pin="22" pinfunction="AIN3" pintype="passive+no_connect"/>
     </net>
-    <net code="28" name="unconnected-(U1-AIN4-Pad23)" class="Default">
+    <net code="41" name="unconnected-(U1-AIN4-Pad23)" class="Default">
       <node ref="U1" pin="23" pinfunction="AIN4" pintype="passive+no_connect"/>
     </net>
-    <net code="29" name="unconnected-(U1-AIN5-Pad24)" class="Default">
+    <net code="42" name="unconnected-(U1-AIN5-Pad24)" class="Default">
       <node ref="U1" pin="24" pinfunction="AIN5" pintype="passive+no_connect"/>
     </net>
-    <net code="30" name="unconnected-(U1-AIN6-Pad25)" class="Default">
+    <net code="43" name="unconnected-(U1-AIN6-Pad25)" class="Default">
       <node ref="U1" pin="25" pinfunction="AIN6" pintype="passive+no_connect"/>
     </net>
-    <net code="31" name="unconnected-(U1-AIN7-Pad26)" class="Default">
+    <net code="44" name="unconnected-(U1-AIN7-Pad26)" class="Default">
       <node ref="U1" pin="26" pinfunction="AIN7" pintype="passive+no_connect"/>
     </net>
-    <net code="32" name="unconnected-(U1-AIN8-Pad27)" class="Default">
+    <net code="45" name="unconnected-(U1-AIN8-Pad27)" class="Default">
       <node ref="U1" pin="27" pinfunction="AIN8" pintype="passive+no_connect"/>
     </net>
-    <net code="33" name="unconnected-(U1-GPO0-Pad8)" class="Default">
+    <net code="46" name="unconnected-(U1-GPO0-Pad8)" class="Default">
       <node ref="U1" pin="8" pinfunction="GPO0" pintype="output+no_connect"/>
     </net>
-    <net code="34" name="unconnected-(U1-GPO1-Pad7)" class="Default">
+    <net code="47" name="unconnected-(U1-GPO1-Pad7)" class="Default">
       <node ref="U1" pin="7" pinfunction="GPO1" pintype="output+no_connect"/>
     </net>
-    <net code="35" name="unconnected-(U1-GPO2-Pad6)" class="Default">
+    <net code="48" name="unconnected-(U1-GPO2-Pad6)" class="Default">
       <node ref="U1" pin="6" pinfunction="GPO2" pintype="output+no_connect"/>
     </net>
-    <net code="36" name="unconnected-(U1-INTRQ-Pad5)" class="Default">
+    <net code="49" name="unconnected-(U1-INTRQ-Pad5)" class="Default">
       <node ref="U1" pin="5" pinfunction="INTRQ" pintype="output+no_connect"/>
     </net>
-    <net code="37" name="unconnected-(U2-NC-Pad4)" class="Default">
+    <net code="50" name="unconnected-(U2-NC-Pad4)" class="Default">
       <node ref="U2" pin="4" pinfunction="NC" pintype="no_connect"/>
     </net>
-    <net code="38" name="unconnected-(U3-NC-Pad4)" class="Default">
+    <net code="51" name="unconnected-(U3-NC-Pad4)" class="Default">
       <node ref="U3" pin="4" pinfunction="NC" pintype="no_connect"/>
     </net>
   </nets>

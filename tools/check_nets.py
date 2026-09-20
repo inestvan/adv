@@ -23,7 +23,7 @@ exact('/SDA', 'U1.30', 'J1.14', 'R6.2', 'TP3.1'); exact('/SCL', 'U1.31', 'J1.13'
 exact('/~{RESET}', 'U1.28', 'R3.2', 'C5.1', 'JP2.1', 'TP5.1'); exact('/PWRDWN', 'U1.32', 'R4.2', 'JP3.1')
 exact('/ALSB', 'U1.29', 'R5.2', 'JP1.2'); exact('/CAM_GPIO', 'J1.11', 'JP2.2', 'JP3.2')
 # analog
-exact('/CVBS_IN', 'J2.1', 'D1.1', 'R1.1'); same('R1.2', 'R2.1', 'C1.1', 'TP7.1'); same('C1.2', 'U1.17')
+same('R1.2', 'R2.1', 'C1.1', 'TP7.1'); same('C1.2', 'U1.17')
 same('U1.19', 'C4.1'); same('U1.20', 'C4.2'); diff('U1.19', 'U1.20'); diff('U1.20', 'U1.14'); diff('U1.19', 'U1.14')
 same('U1.14', 'Y1.2', 'C2.2'); same('U1.15', 'Y1.1', 'C3.2'); diff('U1.14', 'U1.15')
 # power
@@ -34,6 +34,15 @@ assert {'U3.5', 'U1.21', 'C9.1', 'C10.1', 'C19.1', 'C20.1', 'FB1.1', 'TP8.1'} ==
 assert {'FB1.2', 'C11.1', 'U1.16', 'C21.1', 'C22.1'} == nets['PVDD'], nets['PVDD']
 for n in ['U1.1', 'U1.4', 'U1.33', 'U2.2', 'U3.2', 'J1.1', 'J1.4', 'J1.7', 'J1.10', 'J2.2', 'R2.2', 'D1.2', 'C2.1', 'C3.1', 'C5.2', 'JP1.1', 'TP6.1',
           'C6.2', 'C7.2', 'C8.2', 'C9.2', 'C10.2', 'C11.2'] + [f'C{i}.2' for i in range(13, 23)]:
+    assert n in nets['GND'], n
+# stage 5: buffer section
+exact('/5V_IN', 'J4.1', 'D2.2'); exact('/5V_BUF', 'D2.1', 'C28.1', 'FB2.1'); exact('/VS_BUF', 'FB2.2', 'C27.1', 'C26.1', 'TP9.1', 'U5.4')
+exact('/CVBS_SRC', 'J5.1', 'R8.1', 'D3.1', 'C23.1', 'C24.1', 'C25.1')
+same('C23.2', 'U5.1'); same('C24.2', 'U5.2'); same('C25.2', 'U5.3'); diff('U5.1', 'U5.2'); diff('U5.2', 'U5.3')
+same('U5.8', 'R9.1'); same('U5.7', 'R10.1'); same('U5.6', 'R11.1')
+exact('/CVBS_BUF', 'R9.2', 'J8.1', 'JP4.1'); exact('/CVBS_IN', 'J2.1', 'D1.1', 'R1.1', 'JP4.2')
+exact('/MON1', 'R10.2', 'J6.1'); exact('/MON2', 'R11.2', 'J7.1')
+for n in ['U5.5', 'J4.2', 'J5.2', 'J6.2', 'J7.2', 'J8.2', 'R8.2', 'D3.2', 'C26.2', 'C27.2', 'C28.2']:
     assert n in nets['GND'], n
 # nothing else unexpectedly connected
 for k, v in nets.items():

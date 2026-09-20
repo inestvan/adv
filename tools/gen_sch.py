@@ -124,7 +124,7 @@ class Sch:
     # ---------- emit ----------
     def emit(self, title, rev, date):
         root = S('kicad_sch', S('version', 20250114), S('generator', 'eeschema'), S('generator_version', '9.0'),
-                 S('uuid', ROOT_UUID), S('paper', 'A3'),
+                 S('uuid', ROOT_UUID), S('paper', 'A2'),
                  S('title_block', S('title', title), S('date', date), S('rev', rev),
                    S('comment', 1, 'Target: Raspberry Pi 4 CSI camera port, dtoverlay=adv728x-m,adv7280m=1'),
                    S('comment', 2, 'Sources: ADV7280 DS Rev.A, UG-637 Rev.A, AN-1260; see docs/requirements.md')))
@@ -187,11 +187,15 @@ FP = dict(R='Resistor_SMD:R_0603_1608Metric', C0402='Capacitor_SMD:C_0402_1005Me
           JP='Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm', TP='TestPoint:TestPoint_Pad_D1.5mm',
           HOLE='MountingHole:MountingHole_2.2mm_M2', ESD='adv-parts:TI_X1SON-2_DPY0002A_1.0x0.6mm',
           FFC='adv-parts:Amphenol_SFW15R-1STE1LF', RCA='adv-parts:RCA_Multicomp_PSG01546_Horizontal',
-          QFN='Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.6x3.6mm')
+          QFN='Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.6x3.6mm',
+          C0805='Capacitor_SMD:C_0805_2012Metric', SMA='Diode_SMD:D_SMA', SOIC8='Package_SO:SOIC-8_3.9x4.9mm_P1.27mm',
+          JPB='Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm', TERM='TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-2-5.08_1x02_P5.08mm_Horizontal',
+          HDR2='Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical')
 
 LCSC = {'R22': 'C23345', 'R51': 'C23197', 'R10k': 'C25804', 'R4k7': 'C23162',
         'C100n_0402': 'C1525', 'C10n_0402': 'C15195', 'C100n_0603': 'C14663', 'C1u': 'C15849', 'C10u': 'C19702', 'C27p': 'C92670',
-        'XTAL': 'C112564', 'ESD': 'C48260', 'FB': 'C14709', 'LDO': 'C176944', 'FFC': 'C3168538', 'U1': 'C662261'}
+        'XTAL': 'C112564', 'ESD': 'C48260', 'FB': 'C14709', 'LDO': 'C176944', 'FFC': 'C3168538', 'U1': 'C662261',
+        'R75': 'C4275', 'C10u_0805': 'C15850', 'C22u_0805': 'C45783', 'SS14': 'C2480', 'THS': 'C882751', 'TERM': 'C474881', 'HDR2': 'C492401'}
 
 def build():
     s = Sch()
@@ -397,11 +401,97 @@ def build():
     s.text('Analog input (UG-637 Fig. 8): 75 R termination (R1+R2), gain 0.7, AC coupled by C1.\nJ2: RCA jack, hand-soldered (not in JLCPCB catalog).', 55.88, 140.97, 1.27)
     s.text('Crystal 28.63636 MHz, fundamental, CL 20 pF:\nC = 2(CL-Cs)-Cpg = 2(20-3)-4 = 30 pF -> 27 pF (AN-1260)', 55.88, 165.1, 1.27)
     s.text('MIPI CSI-2, 1 data lane + clock (216 Mbps interlaced / 432 Mbps I2P).\nRoute as 100 R differential (2 x 50 R loosely coupled per UG-637), no vias, GND plane under.', 236.22, 104.14, 1.27)
+
+    # ================= Stage 5: THS7314 buffer stage (separable section) =================
+    u = 1.27
+    def P(x, y, j='left'): return (x * u, y * u, j)
+    def Q(x, y): return (x * u, y * u)
+    # --- power: J4 screw terminal 5 V -> D2 -> C28 -> FB2 -> C27/C26 -> U5 VS+
+    J4 = s.place('Connector:Screw_Terminal_01x02', 'J4', '5V_IN', 301 * u, 72 * u, 180, FP['TERM'], LCSC['TERM'],
+                 'Screw terminal 5.08 mm, 5 V from external DC-DC module (hand-soldered)', extra={'Assemble': 'no', 'MPN': 'KF301-5.0-2P'},
+                 ref_pos=P(295, 70), val_pos=P(293, 76))
+    s.power('GND', *J4.pin(2), rot=180)
+    yr = 66 * u
+    s.path(J4.pin(1), Q(309, 72), Q(309, 66)); s.label('5V_IN', 309 * u, 72 * u, 0)
+    D2 = s.place('Device:D_Schottky', 'D2', 'SS14', 314 * u, yr, 180, FP['SMA'], LCSC['SS14'], 'Reverse-polarity protection, 1 A, Vf ~0.4 V at 20 mA',
+                 ref_pos=P(311, 61), val_pos=P(311, 63))
+    s.wire(Q(309, 66), D2.pin(2))
+    C28 = s.place('Device:C', 'C28', '22uF', 326 * u, 69 * u, 0, FP['C0805'], LCSC['C22u_0805'], 'Bulk after D2, 25 V X5R 0805 (SLOS513A: 22-100 uF on supply)', ref_pos=P(324, 68, 'right'), val_pos=P(324, 70, 'right'))
+    s.wire(D2.pin(1), C28.pin(1)); s.power('GND', *C28.pin(2))
+    s.label('5V_BUF', 327 * u, yr, 0)
+    FB2 = s.place('Device:FerriteBead', 'FB2', '120R@100MHz', 336 * u, yr, 90, FP['L'], LCSC['FB'], 'BLM18PG121SN1D, DC-DC ripple filter', extra={'MPN': 'BLM18PG121SN1D'},
+                  ref_pos=P(334, 61), val_pos=P(331, 63))
+    s.wire(C28.pin(1), FB2.pin(1))
+    C27 = s.place('Device:C', 'C27', '10uF', 344 * u, 69 * u, 0, FP['C0805'], LCSC['C10u_0805'], 'VS+ bulk, 25 V X5R 0805')
+    C26 = s.place('Device:C', 'C26', '100nF', 357 * u, 69 * u, 0, FP['C0402'], LCSC['C100n_0402'], 'VS+ decoupling at pin 4 (SLOS513A: 0.1 uF as close as possible)')
+    s.path(FB2.pin(2), C27.pin(1)); s.path(C27.pin(1), C26.pin(1))
+    s.power('GND', *C27.pin(2)); s.power('GND', *C26.pin(2))
+    TP9 = s.place('Connector:TestPoint', 'TP9', 'VS_BUF', 352 * u, 64 * u, 0, FP['TP'], '', 'Buffer supply test point', ref_pos=P(353, 62), val_pos=P(353, 64))
+    s.wire(TP9.pin(1), Q(352, 66))
+    s.label('VS_BUF', 360 * u, yr, 0); s.flag(368 * u, yr)
+    U5 = s.place('adv-parts:THS7314', 'U5', 'THS7314DR', 372 * u, 84 * u, 0, FP['SOIC8'], LCSC['THS'],
+                 '3-ch SDTV video amplifier, 6 dB, 8.5 MHz LPF, sync-tip clamp, SOIC-8', extra={'Manufacturer': 'Texas Instruments', 'MPN': 'THS7314DR'},
+                 ref_pos=P(364, 73), val_pos=P(374, 73))
+    s.path(C26.pin(1), Q(372, 66), U5.pin(4))
+    s.power('GND', *U5.pin(5))
+    # --- input: J5 header -> 75 R termination -> ESD -> 3 x 100 nF -> CH1..3 IN
+    J5 = s.place('Connector_Generic:Conn_01x02', 'J5', 'CVBS_IN_HDR', 313 * u, 90 * u, 180, FP['HDR2'], LCSC['HDR2'],
+                 'CVBS source input, 2.54 mm pin header (1 = signal, 2 = GND), hand-soldered', extra={'Assemble': 'no', 'MPN': 'PZ254V-11-02P'},
+                 ref_pos=P(303, 88), val_pos=P(299, 94))
+    s.power('GND', *J5.pin(2), rot=180)
+    yi = 90 * u
+    s.wire(J5.pin(1), Q(342, 90))
+    R8 = s.place('Device:R', 'R8', '75', 324 * u, 93 * u, 0, FP['R'], LCSC['R75'], 'Input termination 75 R')
+    s.power('GND', *R8.pin(2))
+    D3 = s.place('Device:D_TVS', 'D3', 'TPD1E10B06', 330 * u, 93 * u, 270, FP['ESD'], LCSC['ESD'], 'ESD TVS on buffer input, 12 pF', ref_pos=P(332, 92), val_pos=P(332, 94))
+    s.power('GND', *D3.pin(2))
+    s.label('CVBS_SRC', 336 * u, yi, 0)
+    s.wire(Q(342, 78), Q(342, 90))
+    for i, ref in enumerate(['C23', 'C24', 'C25']):
+        y = (78 + 6 * i) * u
+        C = s.place('Device:C', ref, '100nF', 350 * u, y, 90, FP['C0603'], LCSC['C100n_0603'], f'CH{i+1} input coupling, sync-tip clamp mode (SLOS513A Fig. 34), 50 V X7R')
+        s.wire(Q(342, 78 + 6 * i), C.pin(1)); s.wire(C.pin(2), U5.pin(i + 1))
+    # --- outputs: series 75 R each
+    R9 = s.place('Device:R', 'R9', '75', 390 * u, 78 * u, 90, FP['R'], LCSC['R75'], 'CH1 back-termination -> decoder')
+    R10 = s.place('Device:R', 'R10', '75', 390 * u, 84 * u, 90, FP['R'], LCSC['R75'], 'CH2 back-termination -> monitor 1')
+    R11 = s.place('Device:R', 'R11', '75', 390 * u, 90 * u, 90, FP['R'], LCSC['R75'], 'CH3 back-termination -> monitor 2')
+    s.wire(U5.pin(8), R9.pin(1)); s.wire(U5.pin(7), R10.pin(1)); s.wire(U5.pin(6), R11.pin(1))
+    # CH1 -> JP4 -> CVBS_IN (track across the breakaway tab); J8 = output header when separated
+    s.wire(R9.pin(2), Q(397, 78))
+    J8 = s.place('Connector_Generic:Conn_01x02', 'J8', 'CVBS_BUF_HDR', 397 * u, 64 * u, 90, FP['HDR2'], LCSC['HDR2'],
+                 'Buffered CVBS to decoder when the section is snapped off (1 = signal, 2 = GND), hand-soldered', extra={'Assemble': 'no', 'MPN': 'PZ254V-11-02P'},
+                 ref_pos=P(392, 62), val_pos=P(386, 60))
+    s.wire(J8.pin(1), Q(397, 78)); s.label('CVBS_BUF', 397 * u, 76 * u, 90)
+    s.path(J8.pin(2), Q(401, 68), Q(401, 70)); s.power('GND', 401 * u, 70 * u)
+    JP4 = s.place('Jumper:SolderJumper_2_Bridged', 'JP4', 'BUF>ADV', 405 * u, 78 * u, 0, FP['JPB'], '', 'Bridged by default: buffer CH1 -> decoder input node. Cut to use J2 while boards are joined',
+                  ref_pos=P(403, 75), val_pos=P(403, 81))
+    s.wire(Q(397, 78), JP4.pin(1)); s.wire(JP4.pin(2), Q(413, 78)); s.label('CVBS_IN', 413 * u, 78 * u, 0)
+    # CH2 / CH3 -> monitor headers
+    s.path(R10.pin(2), Q(403, 84), Q(403, 100), Q(412, 100))
+    s.path(R11.pin(2), Q(399, 90), Q(399, 110), Q(412, 110))
+    J6 = s.place('Connector_Generic:Conn_01x02', 'J6', 'MON1_HDR', 416 * u, 100 * u, 0, FP['HDR2'], LCSC['HDR2'],
+                 'CVBS to monitor 1, 2.54 mm pin header (1 = signal, 2 = GND), hand-soldered', extra={'Assemble': 'no', 'MPN': 'PZ254V-11-02P'})
+    J7 = s.place('Connector_Generic:Conn_01x02', 'J7', 'MON2_HDR', 416 * u, 110 * u, 0, FP['HDR2'], LCSC['HDR2'],
+                 'CVBS to monitor 2, 2.54 mm pin header (1 = signal, 2 = GND), hand-soldered', extra={'Assemble': 'no', 'MPN': 'PZ254V-11-02P'})
+    s.power('GND', *J6.pin(2), rot=180); s.power('GND', *J7.pin(2), rot=180)
+    s.label('MON1', 405 * u, 100 * u, 0); s.label('MON2', 405 * u, 110 * u, 0)
+    H3 = s.place('Mechanical:MountingHole', 'H3', 'M2', 300 * u, 112 * u, 0, FP['HOLE'], '', 'Mounting hole, buffer section', in_bom=False)
+    H4 = s.place('Mechanical:MountingHole', 'H4', 'M2', 312 * u, 112 * u, 0, FP['HOLE'], '', 'Mounting hole, buffer section', in_bom=False)
+    s.text('THS7314 BUFFER STAGE - separable section (breakaway tabs, see PCB)', 300 * u, 46 * u, 2.0, bold=True)
+    s.text('5 V from the external DC-DC module via J4 (screw terminal); the Pi 4 is powered from the same 5 V by its own cable.\n'
+           'Only two copper links cross the tabs: CVBS_IN and GND. Snap off -> J8 -> cable -> J2 (RCA) on the decoder board.', 300 * u, 52 * u, 1.27)
+    s.text('Power: J4 -> D2 SS14 (reverse polarity, -0.4 V) -> C28 22 uF -> FB2 -> C27 10 uF + C26 100 nF at VS+ (SLOS513A: 0.1 uF at the pin, 22-100 uF on the line).\n'
+           'THS7314 runs from 3 to 5 V; at ~4.6 V the output swing (4.5 V typ into 75 R) leaves >2 V margin for 2 Vpp video + 0.29 V clamp offset. No LDO needed. Iq 17 mA.',
+           300 * u, 124 * u, 1.27)
+    s.text('Input (SLOS513A Fig. 33/34): R8 75 R termination, D3 ESD, C23-C25 100 nF series -> sync-tip clamp (DC restore) mode, one cap per input (each input has its own clamp).\n'
+           'Outputs: gain 6 dB (x2), series 75 R into 75 R load -> unity overall. CH1 -> decoder (JP4 bridged), CH2/CH3 -> monitors J6/J7. Bandwidth 8.5 MHz (5th-order LPF).',
+           300 * u, 134 * u, 1.27)
+    s.text('CVBS_IN: copper track across the breakaway tab to the decoder input node (J2 / D1 / R1). Cut JP4 to feed J2 directly while the boards are joined; when snapped off use J8.', 300 * u, 142 * u, 1.27)
     return s
 
 if __name__ == '__main__':
     s = build()
-    root = s.emit('CVBS to MIPI CSI-2 video decoder (ADV7280-M) for Raspberry Pi 4', 'A', '2026-09-20')
+    root = s.emit('CVBS to MIPI CSI-2 video decoder (ADV7280-M) for Raspberry Pi 4', 'B', '2026-09-20')
     out = os.path.join(HW, PROJECT + '.kicad_sch')
     with open(out, 'w', encoding='utf-8') as f:
         f.write(dump(root) + '\n')

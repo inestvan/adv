@@ -65,6 +65,30 @@ def adv7280m():
             S('symbol', name + '_1_1', *pins))
     return sym
 
+def ths7314():
+    """TI THS7314 3-channel SDTV video amplifier, SOIC-8 (SLOS513A: 1-3 CH IN, 4 VS+, 5 GND, 6-8 CH3/2/1 OUT)."""
+    name = 'THS7314'
+    pins = []
+    for i, (n, nm) in enumerate([('1', 'CH1_IN'), ('2', 'CH2_IN'), ('3', 'CH3_IN')]):
+        pins.append(pin('input', n, nm, -12.7, 7.62 - 7.62 * i, 0))
+    for i, (n, nm) in enumerate([('8', 'CH1_OUT'), ('7', 'CH2_OUT'), ('6', 'CH3_OUT')]):
+        pins.append(pin('output', n, nm, 12.7, 7.62 - 7.62 * i, 180))
+    pins.append(pin('power_in', '4', 'VS+', 0, 12.7, 270))
+    pins.append(pin('power_in', '5', 'GND', 0, -12.7, 90))
+    sym = S('symbol', name, S('exclude_from_sim', Sym('no')), S('in_bom', Sym('yes')), S('on_board', Sym('yes')),
+            prop('Reference', 'U', -10.16, 11.43, justify='left'),
+            prop('Value', name, 0, -15.24),
+            prop('Footprint', 'Package_SO:SOIC-8_3.9x4.9mm_P1.27mm', 0, -17.78, hide=True),
+            prop('Datasheet', 'https://www.ti.com/lit/ds/symlink/ths7314.pdf', 0, -20.32, hide=True),
+            prop('Description', '3-channel SDTV video amplifier, 6 dB, 5th-order 8.5 MHz LPF, sync-tip clamp, 3-5 V, SOIC-8', 0, -22.86, hide=True),
+            S('property', 'ki_keywords', 'video amplifier buffer CVBS filter', S('at', 0, 0, 0), eff(hide=True)),
+            S('property', 'ki_fp_filters', 'SOIC*3.9x4.9mm*P1.27mm*', S('at', 0, 0, 0), eff(hide=True)),
+            S('symbol', name + '_0_1',
+              S('rectangle', S('start', -10.16, 10.16), S('end', 10.16, -10.16),
+                S('stroke', S('width', 0.254), S('type', Sym('default'))), S('fill', S('type', Sym('background'))))),
+            S('symbol', name + '_1_1', *pins))
+    return sym
+
 def power_symbol(name, base='+1V8', desc=None):
     lib = load_lib(os.path.join(KSYM, 'power.kicad_sym'))
     s = copy.deepcopy(get_symbol(lib, base))
@@ -80,6 +104,7 @@ def power_symbol(name, base='+1V8', desc=None):
 def build():
     root = S('kicad_symbol_lib', S('version', 20241209), S('generator', 'kicad_symbol_editor'), S('generator_version', '9.0'))
     root.append(adv7280m())
+    root.append(ths7314())
     root.append(power_symbol('+1V8D', desc='1.8 V digital rail (DVDD, MVDD) from U2'))
     root.append(power_symbol('+1V8A', desc='1.8 V analog rail (AVDD) from U3'))
     root.append(power_symbol('PVDD', desc='1.8 V PLL rail, filtered from +1V8A'))
