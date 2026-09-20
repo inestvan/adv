@@ -153,7 +153,7 @@ def route(r):
         for dy in (-1.0, 0.0, 1.0):
             r.via('GND', (20.0 + dx, 10.5 + dy))
     # ---------------- zones ----------------
-    W, H = 42.0, 32.0
+    W, H = 42.0, 55.0   # zones cover both sections; the fill follows the board outline (slot + tabs)
     rect = [(0, 0), (W, 0), (W, H), (0, H)]
     r.zone('GND', IN1, rect, clearance=0.25, minw=0.25)
     r.zone('GND', F, rect, clearance=0.3, minw=0.25)

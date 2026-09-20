@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>/home/user/adv/hw/adv7280m-csi2.kicad_sch</source>
-    <date>2026-09-20T10:57:50+0000</date>
+    <date>2026-09-20T12:26:04+0000</date>
     <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -105,18 +105,18 @@
       <tstamps>9968757d-f02e-5218-b81f-0d7675e68f0e</tstamps>
     </comp>
     <comp ref="C5">
-      <value>1uF</value>
+      <value>4.7uF</value>
       <footprint>Capacitor_SMD:C_0603_1608Metric</footprint>
       <datasheet>~</datasheet>
-      <description>RESET RC, tau = 10 ms (&gt;5 ms min)</description>
+      <description>RESET RC, tau = 47 ms: low (&lt;0.8 V) for 13 ms after 3V3 (&gt;5 ms min), high (&gt;2 V) at 44 ms</description>
       <fields>
-        <field name="LCSC">C15849</field>
+        <field name="LCSC">C19666</field>
         <field name="Footprint">Capacitor_SMD:C_0603_1608Metric</field>
         <field name="Datasheet">~</field>
-        <field name="Description">RESET RC, tau = 10 ms (&gt;5 ms min)</field>
+        <field name="Description">RESET RC, tau = 47 ms: low (&lt;0.8 V) for 13 ms after 3V3 (&gt;5 ms min), high (&gt;2 V) at 44 ms</field>
       </fields>
       <libsource lib="Device" part="C" description="Unpolarized capacitor"/>
-      <property name="LCSC" value="C15849"/>
+      <property name="LCSC" value="C19666"/>
       <property name="Sheetname" value=""/>
       <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
       <property name="ki_keywords" value="cap capacitor"/>
@@ -1002,12 +1002,12 @@
       <value>22</value>
       <footprint>Resistor_SMD:R_0603_1608Metric</footprint>
       <datasheet>~</datasheet>
-      <description>Series termination (24 R in UG-637 Fig. 8; 22 R = nearest JLCPCB Basic)</description>
+      <description>Series termination (24 R in UG-637 Fig. 9; 22 R = nearest JLCPCB Basic)</description>
       <fields>
         <field name="LCSC">C23345</field>
         <field name="Footprint">Resistor_SMD:R_0603_1608Metric</field>
         <field name="Datasheet">~</field>
-        <field name="Description">Series termination (24 R in UG-637 Fig. 8; 22 R = nearest JLCPCB Basic)</field>
+        <field name="Description">Series termination (24 R in UG-637 Fig. 9; 22 R = nearest JLCPCB Basic)</field>
       </fields>
       <libsource lib="Device" part="R" description="Resistor"/>
       <property name="LCSC" value="C23345"/>

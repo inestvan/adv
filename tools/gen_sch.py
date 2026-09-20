@@ -193,7 +193,7 @@ FP = dict(R='Resistor_SMD:R_0603_1608Metric', C0402='Capacitor_SMD:C_0402_1005Me
           HDR2='Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical')
 
 LCSC = {'R22': 'C23345', 'R51': 'C23197', 'R10k': 'C25804', 'R4k7': 'C23162',
-        'C100n_0402': 'C1525', 'C10n_0402': 'C15195', 'C100n_0603': 'C14663', 'C1u': 'C15849', 'C10u': 'C19702', 'C27p': 'C92670',
+        'C100n_0402': 'C1525', 'C10n_0402': 'C15195', 'C100n_0603': 'C14663', 'C1u': 'C15849', 'C4u7': 'C19666', 'C10u': 'C19702', 'C27p': 'C92670',
         'XTAL': 'C112564', 'ESD': 'C48260', 'FB': 'C14709', 'LDO': 'C176944', 'FFC': 'C3168538', 'U1': 'C662261',
         'R75': 'C4275', 'C10u_0805': 'C15850', 'C22u_0805': 'C45783', 'SS14': 'C2480', 'THS': 'C882751', 'TERM': 'C474881', 'HDR2': 'C492401'}
 
@@ -217,7 +217,7 @@ def build():
     s.wire(ain1, C1.pin(2))
     xT = 157.48                                          # termination node
     s.wire(C1.pin(1), (xT, yA))
-    R1 = s.place('Device:R', 'R1', '22', 149.86, yA, 90, FP['R'], LCSC['R22'], 'Series termination (24 R in UG-637 Fig. 8; 22 R = nearest JLCPCB Basic)')
+    R1 = s.place('Device:R', 'R1', '22', 149.86, yA, 90, FP['R'], LCSC['R22'], 'Series termination (24 R in UG-637 Fig. 9; 22 R = nearest JLCPCB Basic)')
     s.wire(R1.pin(2), (xT, yA))
     R2 = s.place('Device:R', 'R2', '51', xT, 116.84, 0, FP['R'], LCSC['R51'], 'Shunt termination, 22+51 = 73 R')
     s.wire((xT, yA), R2.pin(1))
@@ -301,7 +301,7 @@ def build():
     s.power('+3V3', xR, R3.pin(1)[1] - 2.54); s.wire((xR, R3.pin(1)[1] - 2.54), R3.pin(1))
     yRn = 62.23
     s.wire(R3.pin(2), (xR, yRn))
-    C5 = s.place('Device:C', 'C5', '1uF', xR, 66.04, 0, FP['C0603'], LCSC['C1u'], 'RESET RC, tau = 10 ms (>5 ms min)')
+    C5 = s.place('Device:C', 'C5', '4.7uF', xR, 66.04, 0, FP['C0603'], LCSC['C4u7'], 'RESET RC, tau = 47 ms: low (<0.8 V) for 13 ms after 3V3 (>5 ms min), high (>2 V) at 44 ms')
     s.wire((xR, yRn), C5.pin(1)); s.power('GND', *C5.pin(2))
     s.wire((xR, yRn), (251.46, yRn)); s.label('~{RESET}', 251.46, yRn, 0)
     TP5 = s.place('Connector:TestPoint', 'TP5', 'nRESET', 236.22, 57.15, 0, FP['TP'], '', 'RESET test point', ref_pos=(234.95, 54.61, 'right'), val_pos=(234.95, 57.15, 'right'))
@@ -398,7 +398,7 @@ def build():
     s.flag(322.58, 243.84); s.wire((317.5, 243.84), (322.58, 243.84))
     H1 = s.place('Mechanical:MountingHole', 'H1', 'M2', 340.36, 241.3, 0, FP['HOLE'], '', 'Mounting hole', in_bom=False)
     H2 = s.place('Mechanical:MountingHole', 'H2', 'M2', 355.6, 241.3, 0, FP['HOLE'], '', 'Mounting hole', in_bom=False)
-    s.text('Analog input (UG-637 Fig. 8): 75 R termination (R1+R2), gain 0.7, AC coupled by C1.\nJ2: RCA jack, hand-soldered (not in JLCPCB catalog).', 55.88, 140.97, 1.27)
+    s.text('Analog input (UG-637 Fig. 9): 75 R termination (R1+R2), gain 0.7, AC coupled by C1.\nJ2: RCA jack, hand-soldered (not in JLCPCB catalog).', 55.88, 140.97, 1.27)
     s.text('Crystal 28.63636 MHz, fundamental, CL 20 pF:\nC = 2(CL-Cs)-Cpg = 2(20-3)-4 = 30 pF -> 27 pF (AN-1260)', 55.88, 165.1, 1.27)
     s.text('MIPI CSI-2, 1 data lane + clock (216 Mbps interlaced / 432 Mbps I2P).\nRoute as 100 R differential (2 x 50 R loosely coupled per UG-637), no vias, GND plane under.', 236.22, 104.14, 1.27)
 

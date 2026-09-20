@@ -10,7 +10,10 @@ KFP = '/usr/share/kicad/footprints'
 PCB = os.path.join(HW, 'adv7280m-csi2.kicad_pcb')
 NET = os.path.join(HW, 'adv7280m-csi2.xml')
 
-BOARD_W, BOARD_H, CORNER_R = 42.0, 32.0, 1.5
+BOARD_W, BOARD_H, CORNER_R = 42.0, 55.0, 1.5
+# breakaway slot between the decoder (y < SLOT_Y0) and the THS7314 buffer section (y > SLOT_Y1); two solid tabs
+SLOT_Y0, SLOT_Y1 = 32.0, 34.0
+TABS = [(7.0, 9.5), (30.5, 33.0)]   # x ranges of the tabs (GND-only tab left, CVBS_IN + GND tab right)
 
 # ref: (x, y, rot)  -- all top side
 PLACE = {
@@ -36,6 +39,18 @@ PLACE = {
     'U3': (11.5, 27.0, 0), 'C9': (15.3, 25.8, 0), 'C10': (15.3, 27.6, 0), 'FB1': (18.4, 25.8, 0), 'C11': (21.4, 25.8, 0), 'TP8': (18.4, 28.3, 0),
     'TP3': (26.3, 27.2, 0), 'TP4': (28.9, 27.2, 0), 'TP6': (36.5, 22.0, 0),
     'H1': (8.0, 3.2, 0), 'H2': (35.5, 29.0, 0),
+    # ---- stage 5: THS7314 buffer section (y 34..55) ----
+    'H3': (2.6, 37.0, 0), 'H4': (39.4, 44.5, 0),
+    'J5': (7.0, 38.3, 0),                                   # CVBS source header, pin 1 (signal) on top
+    'D3': (9.7, 40.0, 90), 'R8': (11.5, 40.0, 90),           # ESD + 75 R termination, GND pads at the bottom
+    'C23': (14.6, 41.0, 0), 'C24': (14.6, 43.0, 0), 'C25': (14.6, 45.0, 0),
+    'U5': (21.2, 44.0, 0),                                  # SOIC-8, inputs left, outputs right, VS+ pin 4 bottom-left
+    'TP9': (28.6, 48.9, 0), 'C26': (20.0, 47.4, 0),
+    'J4': (6.0, 46.5, 270),                                 # screw terminal on the bottom-left corner, pin 1 = +5 V (top), pin 2 = GND
+    'D2': (15.5, 49.6, 180), 'C28': (20.3, 50.6, 90), 'FB2': (23.0, 49.0, 0), 'C27': (26.0, 50.6, 90),
+    'R9': (27.5, 40.4, 0), 'R10': (27.5, 43.4, 0), 'R11': (27.5, 46.4, 0),
+    'JP4': (32.5, 36.8, 180), 'J8': (37.0, 36.7, 90),        # JP4 pad 2 under the tab track; J8 pin 1 (signal) left
+    'J7': (30.0, 52.3, 90), 'J6': (37.0, 52.0, 90),          # monitor outputs along the bottom edge, pin 1 (signal) left
 }
 
 def mm(x): return FromMM(x)
@@ -65,8 +80,17 @@ def add_text(board, txt, x, y, layer, size=1.0, thick=0.15, rot=0, mirror=False)
 def outline(board):
     W, H, r = BOARD_W, BOARD_H, CORNER_R
     L = pcbnew.Edge_Cuts
-    add_line(board, (r, 0), (W - r, 0), L); add_line(board, (W, r), (W, H - r), L)
-    add_line(board, (W - r, H), (r, H), L); add_line(board, (0, H - r), (0, r), L)
+    add_line(board, (r, 0), (W - r, 0), L)
+    add_line(board, (W - r, H), (r, H), L)
+    # side edges are interrupted by the breakaway slot
+    for x in (0, W):
+        add_line(board, (x, r), (x, SLOT_Y0), L); add_line(board, (x, SLOT_Y1), (x, H - r), L)
+    # slot: two horizontal edges broken by the tabs, tabs closed by short verticals
+    xs = [0.0] + [v for t in TABS for v in t] + [W]
+    for a, b in zip(xs[0::2], xs[1::2]):
+        add_line(board, (a, SLOT_Y0), (b, SLOT_Y0), L); add_line(board, (a, SLOT_Y1), (b, SLOT_Y1), L)
+    for t0, t1 in TABS:
+        add_line(board, (t0, SLOT_Y0), (t0, SLOT_Y1), L); add_line(board, (t1, SLOT_Y0), (t1, SLOT_Y1), L)
     k = r * (1 - math.sqrt(0.5))
     add_arc(board, (W - r, 0), (W - k, k), (W, r), L)
     add_arc(board, (W, H - r), (W - k, H - k), (W - r, H), L)
@@ -130,8 +154,17 @@ def build():
     add_text(board, 'CVBS>CSI-2 ADV7280-M', 21.0, 31.0, pcbnew.F_SilkS, 0.9, 0.15)
     add_text(board, 'TO RPi CAMERA', 10.5, 6.2, pcbnew.F_SilkS, 0.8, 0.12)
     add_text(board, 'CVBS IN', 37.2, 15.8, pcbnew.F_SilkS, 0.8, 0.12)
-    add_text(board, 'rev A', 39.0, 31.0, pcbnew.F_SilkS, 0.8, 0.12)
-    add_text(board, 'ADV7280M-CSI2 rev A  github inestvan/adv', 21.0, 16.0, pcbnew.B_SilkS, 1.0, 0.15, mirror=True)
+    add_text(board, 'rev B', 39.0, 31.0, pcbnew.F_SilkS, 0.8, 0.12)
+    add_text(board, 'ADV7280M-CSI2 rev B  github inestvan/adv', 21.0, 16.0, pcbnew.B_SilkS, 1.0, 0.15, mirror=True)
+    # buffer section silkscreen
+    add_text(board, 'THS7314 BUFFER', 21.0, 39.2, pcbnew.F_SilkS, 0.9, 0.15)
+    add_text(board, 'CVBS IN', 7.0, 35.6, pcbnew.F_SilkS, 0.7, 0.12)
+    add_text(board, '5V IN', 2.2, 43.4, pcbnew.F_SilkS, 0.7, 0.12)
+    add_text(board, '+', 9.2, 46.5, pcbnew.F_SilkS, 0.9, 0.15); add_text(board, '-', 9.2, 51.6, pcbnew.F_SilkS, 0.9, 0.15)
+    add_text(board, 'TO ADV', 38.3, 39.3, pcbnew.F_SilkS, 0.7, 0.12)
+    add_text(board, 'MON2', 31.8, 50.0, pcbnew.F_SilkS, 0.7, 0.12); add_text(board, 'MON1', 38.3, 49.6, pcbnew.F_SilkS, 0.7, 0.12)
+    add_text(board, 'JP4 cut', 32.5, 39.3, pcbnew.F_SilkS, 0.6, 0.1)
+    add_text(board, 'THS7314 BUFFER rev B', 21.0, 44.5, pcbnew.B_SilkS, 0.9, 0.15, mirror=True)
     return board, fps, netobj
 
 def stackup_text():
