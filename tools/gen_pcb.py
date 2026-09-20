@@ -42,10 +42,10 @@ PLACE = {
     # ---- stage 5: THS7314 buffer section (y 34..55) ----
     'H3': (2.6, 37.0, 0), 'H4': (39.4, 44.5, 0),
     'J5': (7.0, 38.3, 0),                                   # CVBS source header, pin 1 (signal) on top
-    'D3': (9.7, 40.0, 90), 'R8': (11.5, 40.0, 90),           # ESD + 75 R termination, GND pads at the bottom
+    'D3': (9.7, 40.0, 270), 'R8': (11.5, 40.0, 270),         # ESD + 75 R termination, signal pads on top, GND pads at the bottom
     'C23': (14.6, 41.0, 0), 'C24': (14.6, 43.0, 0), 'C25': (14.6, 45.0, 0),
     'U5': (21.2, 44.0, 0),                                  # SOIC-8, inputs left, outputs right, VS+ pin 4 bottom-left
-    'TP9': (28.6, 48.9, 0), 'C26': (20.0, 47.4, 0),
+    'TP9': (28.6, 48.9, 0), 'C26': (20.0, 47.4, 180),   # C26 pad 1 (VS_BUF) on the right
     'J4': (6.0, 46.5, 270),                                 # screw terminal on the bottom-left corner, pin 1 = +5 V (top), pin 2 = GND
     'D2': (15.5, 49.6, 180), 'C28': (20.3, 50.6, 90), 'FB2': (23.0, 49.0, 0), 'C27': (26.0, 50.6, 90),
     'R9': (27.5, 40.4, 0), 'R10': (27.5, 43.4, 0), 'R11': (27.5, 46.4, 0),

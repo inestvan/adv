@@ -152,14 +152,51 @@ def route(r):
     for dx in (-1.0, 0.0, 1.0):
         for dy in (-1.0, 0.0, 1.0):
             r.via('GND', (20.0 + dx, 10.5 + dy))
+    # ---------------- GND return vias next to the MIPI crossover vias (D0N) ----------------
+    r.via('GND', (12.5, 12.2)); r.via('GND', (12.6, 15.9))
+    # ================= stage 5: THS7314 buffer section =================
+    # CVBS_IN link: straight down from the decoder input node through the right tab (x 30.5..33) to JP4 pad 2
+    r.track('/CVBS_IN', [(31.9, 16.75), (31.9, 36.75), U('JP4.2')], W_CVBS)
+    # JP4 is a net-tie footprint: its bridge polygon must only be touched by its own pads -> enter pad 1 from the right
+    r.track('/CVBS_BUF', [U('R9.2'), (29.5, 40.4), (31.9, 38.0), (34.0, 38.0), (34.6, 37.4), (34.6, 36.8), (36.9, 36.8), U('J8.1')], W_CVBS)
+    r.track('/CVBS_BUF', [(34.6, 36.8), (33.5, 36.8)], W_CVBS)
+    # input node
+    r.track('/CVBS_SRC', [U('J5.1'), (12.9, 38.3), (12.9, 45.0), U('C25.1')], W_CVBS)
+    r.track('/CVBS_SRC', [(12.9, 41.0), U('C23.1')], W_CVBS); r.track('/CVBS_SRC', [(12.9, 43.0), U('C24.1')], W_CVBS)
+    r.track('/CVBS_SRC', [U('D3.1'), (9.7, 38.3)], W_CVBS); r.track('/CVBS_SRC', [U('R8.1'), (11.5, 38.3)], W_CVBS)
+    r.track('Net-(U5-CH1_IN)', [U('C23.2'), (16.6, 41.0), (17.69, 42.09), U('U5.1')], W_CVBS)
+    r.track('Net-(U5-CH2_IN)', [U('C24.2'), (17.4, 43.0), (17.77, 43.37), U('U5.2')], W_CVBS)
+    r.track('Net-(U5-CH3_IN)', [U('C25.2'), (17.4, 45.0), (17.77, 44.63), U('U5.3')], W_CVBS)
+    # outputs
+    r.track('Net-(U5-CH1_OUT)', [U('U5.8'), (24.9, 42.09), (26.59, 40.4), U('R9.1')], W_CVBS)
+    r.track('Net-(U5-CH2_OUT)', [U('U5.7'), U('R10.1')], W_CVBS)
+    r.track('Net-(U5-CH3_OUT)', [U('U5.6'), (24.9, 44.63), (26.67, 46.4), U('R11.1')], W_CVBS)
+    r.track('/MON1', [U('R10.2'), (29.4, 43.4), (37.0, 51.0), U('J6.1')], W_CVBS)
+    r.track('/MON2', [U('R11.2'), (29.9, 46.4), (30.0, 46.5), U('J7.1')], W_CVBS)
+    # power: J4 -> D2 -> C28 -> FB2 -> C27/C26/TP9 -> U5.4
+    r.track('/5V_IN', [U('J4.1'), (9.1, 49.6), U('D2.2')], W_PWR_S)
+    r.track('/5V_BUF', [U('D2.1'), (17.5, 51.55), U('C28.1'), (21.4, 51.55), (22.21, 50.74), U('FB2.1')], W_PWR_S)
+    r.track('/VS_BUF', [U('FB2.2'), (24.3, 49.0), (24.3, 51.55), U('C27.1'), (27.3, 51.55), (28.6, 50.25), U('TP9.1')], W_PWR_S)
+    r.track('/VS_BUF', [U('FB2.2'), (23.79, 48.1), (20.48, 48.1), U('C26.1')], W_PWR_S)
+    r.track('/VS_BUF', [U('C26.1'), (20.48, 46.69), (19.7, 45.91), U('U5.4')], W_PWR_S)
+    # GND vias of the section
+    for ref, xy in [('R8.2', (11.5, 41.8)), ('D3.2', (9.7, 41.3)), ('U5.5', (24.4, 46.6)), ('C26.2', (18.6, 47.4)),
+                    ('C28.2', (19.2, 49.65)), ('C27.2', (26.0, 48.5))]:
+        r.gnd_via(ref, xy)
+    for xy in [(2.6, 42.5), (14.0, 37.5), (22.0, 37.5), (28.0, 37.5), (35.5, 44.5), (16.0, 53.8), (23.0, 53.8), (3.5, 41.5),
+               (8.25, 30.8), (8.25, 35.2), (29.6, 30.8), (29.8, 35.4), (34.2, 41.0), (40.8, 41.0), (12.0, 47.0), (31.5, 42.5)]:
+        r.via('GND', xy)
     # ---------------- zones ----------------
     W, H = 42.0, 55.0   # zones cover both sections; the fill follows the board outline (slot + tabs)
     rect = [(0, 0), (W, 0), (W, H), (0, H)]
     r.zone('GND', IN1, rect, clearance=0.25, minw=0.25)
     r.zone('GND', F, rect, clearance=0.3, minw=0.25)
     r.zone('GND', B, rect, clearance=0.3, minw=0.25)
-    r.zone('+3V3', IN2, [(4.5, 3.4), (31.0, 3.4), (31.0, 4.4), (11.5, 4.4), (11.5, 29.5), (4.5, 29.5)], clearance=0.25, minw=0.25)
-    r.zone('+1V8D', IN2, [(12.2, 7.2), (22.3, 7.2), (22.3, 13.2), (19.9, 13.2), (19.9, 24.0), (12.2, 24.0)], clearance=0.25, minw=0.25)
+    # +3V3 zone bulges to x = 13.9 under the D0N crossover stub (B.Cu, x 11.8..13.2) so that both MIPI B.Cu stubs see one continuous reference plane
+    r.zone('+3V3', IN2, [(4.5, 3.4), (31.0, 3.4), (31.0, 4.4), (11.5, 4.4), (11.5, 11.6), (13.9, 11.6), (13.9, 16.5), (11.5, 16.5), (11.5, 29.5), (4.5, 29.5)], clearance=0.25, minw=0.25)
+    r.zone('+1V8D', IN2, [(12.2, 7.2), (22.3, 7.2), (22.3, 13.2), (19.9, 13.2), (19.9, 24.0), (12.2, 24.0), (12.2, 17.0), (14.4, 17.0), (14.4, 11.1), (12.2, 11.1)], clearance=0.25, minw=0.25)
+    # GND zone on In2 for the buffer section (reference for its B.Cu-side vias, stitching)
+    r.zone('GND', IN2, [(0, 34.0), (W, 34.0), (W, H), (0, H)], clearance=0.25, minw=0.25)
     r.zone('+1V8A', IN2, [(22.6, 7.5), (28.6, 7.5), (28.6, 29.5), (12.0, 29.5), (12.0, 24.6), (27.0, 24.6), (27.0, 13.4), (22.6, 13.4)], clearance=0.25, minw=0.25)
 
 if __name__ == '__main__':
