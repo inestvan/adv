@@ -9,7 +9,6 @@
 "FB1","120R@100MHz","Inductor_SMD:L_0603_1608Metric","C14709","BLM18PG121SN1D","","BLM18PG121SN1D, PVDD filter","1"
 "J1","RPi_CSI_15pin","adv-parts:Amphenol_SFW15R-1STE1LF","C3168538","SFW15R-1STE1LF","","FFC 15 pos 1.0 mm bottom contact (Amphenol SFW15R-1STE1LF, same as Pi Camera Module)","1"
 "J2","CVBS_RCA","adv-parts:RCA_Multicomp_PSG01546_Horizontal","","PSG01546 or equivalent","no","RCA jack, hand-soldered (not stocked by JLCPCB)","1"
-"J3","CVBS_SMA","Connector_Coaxial:SMA_BAT_Wireless_BWSMA-KWE-Z001","C496551","BWSMA-KWE-Z001","","SMA edge-mount jack (alternative input)","1"
 "JP1","ALSB>GND","Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm","","","","Close for I2C addr 0x20 (needs dtoverlay addr=0x20)","1"
 "JP2","CAM_GPIO>RST","Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm","","","","Open by default: connects CAM_GPIO to RESET","1"
 "JP3","CAM_GPIO>PWRDWN","Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm","","","","Open by default: connects CAM_GPIO to PWRDWN","1"

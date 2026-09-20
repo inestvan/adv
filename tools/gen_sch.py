@@ -187,11 +187,11 @@ FP = dict(R='Resistor_SMD:R_0603_1608Metric', C0402='Capacitor_SMD:C_0402_1005Me
           JP='Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm', TP='TestPoint:TestPoint_Pad_D1.5mm',
           HOLE='MountingHole:MountingHole_2.2mm_M2', ESD='adv-parts:TI_X1SON-2_DPY0002A_1.0x0.6mm',
           FFC='adv-parts:Amphenol_SFW15R-1STE1LF', RCA='adv-parts:RCA_Multicomp_PSG01546_Horizontal',
-          SMA='adv-parts:SMA_BWSMA-KWE-Z001_EdgeMount', QFN='Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.6x3.6mm')
+          QFN='Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.6x3.6mm')
 
 LCSC = {'R22': 'C23345', 'R51': 'C23197', 'R10k': 'C25804', 'R4k7': 'C23162',
         'C100n_0402': 'C1525', 'C10n_0402': 'C15195', 'C100n_0603': 'C14663', 'C1u': 'C15849', 'C10u': 'C19702', 'C27p': 'C92670',
-        'XTAL': 'C112564', 'ESD': 'C48260', 'FB': 'C14709', 'LDO': 'C176944', 'FFC': 'C3168538', 'SMA': 'C496551', 'U1': 'C662261'}
+        'XTAL': 'C112564', 'ESD': 'C48260', 'FB': 'C14709', 'LDO': 'C176944', 'FFC': 'C3168538', 'U1': 'C662261'}
 
 def build():
     s = Sch()
@@ -227,13 +227,10 @@ def build():
     s.power('GND', *D1.pin(2))
     xJ = 127.0
     s.wire((xE, yA), (xJ, yA))
-    J2 = s.place('Connector:Conn_Coaxial', 'J2', 'CVBS_RCA', 116.84, 99.06, 180, FP['RCA'], '', 'RCA jack, hand-soldered (not stocked by JLCPCB)',
-                 extra={'Assemble': 'no', 'MPN': 'PSG01546 or equivalent'}, ref_pos=(109.22, 96.52, 'left'), val_pos=(106.68, 104.14, 'left'))
-    J3 = s.place('Connector:Conn_Coaxial', 'J3', 'CVBS_SMA', 116.84, 121.92, 180, FP['SMA'], LCSC['SMA'], 'SMA edge-mount jack (alternative input)',
-                 extra={'MPN': 'BWSMA-KWE-Z001'}, ref_pos=(109.22, 119.38, 'left'), val_pos=(106.68, 127.0, 'left'))
-    s.path(J2.pin(1), (xJ, J2.pin(1)[1]), (xJ, J3.pin(1)[1]), J3.pin(1))
+    J2 = s.place('Connector:Conn_Coaxial', 'J2', 'CVBS_RCA', 116.84, 101.6, 180, FP['RCA'], '', 'RCA jack, hand-soldered (not stocked by JLCPCB)',
+                 extra={'Assemble': 'no', 'MPN': 'PSG01546 or equivalent'}, ref_pos=(109.22, 99.06, 'left'), val_pos=(106.68, 106.68, 'left'))
+    s.path(J2.pin(1), (xJ, J2.pin(1)[1]), (xJ, yA))
     s.power('GND', J2.pin(2)[0], J2.pin(2)[1], 180)
-    s.power('GND', J3.pin(2)[0], J3.pin(2)[1], 180)
     s.label('CVBS_IN', xJ, yA - 0.0, 0)
     for nm in ['AIN2', 'AIN3', 'AIN4', 'AIN5', 'AIN6', 'AIN7', 'AIN8']:
         s.nc(UP(nm))
@@ -397,7 +394,7 @@ def build():
     s.flag(322.58, 243.84); s.wire((317.5, 243.84), (322.58, 243.84))
     H1 = s.place('Mechanical:MountingHole', 'H1', 'M2', 340.36, 241.3, 0, FP['HOLE'], '', 'Mounting hole', in_bom=False)
     H2 = s.place('Mechanical:MountingHole', 'H2', 'M2', 355.6, 241.3, 0, FP['HOLE'], '', 'Mounting hole', in_bom=False)
-    s.text('Analog input (UG-637 Fig. 8): 75 R termination (R1+R2), gain 0.7, AC coupled by C1.\nJ2 (RCA) and J3 (SMA) are alternative footprints for the same input; fit one.', 55.88, 140.97, 1.27)
+    s.text('Analog input (UG-637 Fig. 8): 75 R termination (R1+R2), gain 0.7, AC coupled by C1.\nJ2: RCA jack, hand-soldered (not in JLCPCB catalog).', 55.88, 140.97, 1.27)
     s.text('Crystal 28.63636 MHz, fundamental, CL 20 pF:\nC = 2(CL-Cs)-Cpg = 2(20-3)-4 = 30 pF -> 27 pF (AN-1260)', 55.88, 165.1, 1.27)
     s.text('MIPI CSI-2, 1 data lane + clock (216 Mbps interlaced / 432 Mbps I2P).\nRoute as 100 R differential (2 x 50 R loosely coupled per UG-637), no vias, GND plane under.', 236.22, 104.14, 1.27)
     return s

@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>/home/user/adv/hw/adv7280m-csi2.kicad_sch</source>
-    <date>2026-09-20T08:58:02+0000</date>
+    <date>2026-09-20T10:13:51+0000</date>
     <tool>Eeschema 9.0.9-9.0.9~ubuntu24.04.1</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -573,28 +573,6 @@
       <property name="ki_fp_filters" value="*BNC* *SMA* *SMB* *SMC* *Cinch* *LEMO* *UMRF* *MCX* *U.FL*"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>765c6bb8-f233-5952-ab90-f53202be2f04</tstamps>
-    </comp>
-    <comp ref="J3">
-      <value>CVBS_SMA</value>
-      <footprint>adv-parts:SMA_BWSMA-KWE-Z001_EdgeMount</footprint>
-      <datasheet>~</datasheet>
-      <description>SMA edge-mount jack (alternative input)</description>
-      <fields>
-        <field name="LCSC">C496551</field>
-        <field name="MPN">BWSMA-KWE-Z001</field>
-        <field name="Footprint">adv-parts:SMA_BWSMA-KWE-Z001_EdgeMount</field>
-        <field name="Datasheet">~</field>
-        <field name="Description">SMA edge-mount jack (alternative input)</field>
-      </fields>
-      <libsource lib="Connector" part="Conn_Coaxial" description="coaxial connector (BNC, SMA, SMB, SMC, Cinch/RCA, LEMO, ...)"/>
-      <property name="LCSC" value="C496551"/>
-      <property name="MPN" value="BWSMA-KWE-Z001"/>
-      <property name="Sheetname" value=""/>
-      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
-      <property name="ki_keywords" value="BNC SMA SMB SMC LEMO coaxial connector CINCH RCA MCX MMCX U.FL UMRF"/>
-      <property name="ki_fp_filters" value="*BNC* *SMA* *SMB* *SMC* *Cinch* *LEMO* *UMRF* *MCX* *U.FL*"/>
-      <sheetpath names="/" tstamps="/"/>
-      <tstamps>39af2b4b-e361-5151-b108-25566800819f</tstamps>
     </comp>
     <comp ref="JP1">
       <value>ALSB&gt;GND</value>
@@ -1347,7 +1325,7 @@
     </library>
   </libraries>
   <nets>
-    <net code="1" name="+1V8A" class="Default">
+    <net code="1" name="+1V8A" class="Power">
       <node ref="C10" pin="1" pintype="passive"/>
       <node ref="C19" pin="1" pintype="passive"/>
       <node ref="C20" pin="1" pintype="passive"/>
@@ -1357,7 +1335,7 @@
       <node ref="U1" pin="21" pinfunction="AVDD" pintype="power_in"/>
       <node ref="U3" pin="5" pinfunction="VOUT" pintype="power_out"/>
     </net>
-    <net code="2" name="+1V8D" class="Default">
+    <net code="2" name="+1V8D" class="Power">
       <node ref="C15" pin="1" pintype="passive"/>
       <node ref="C16" pin="1" pintype="passive"/>
       <node ref="C17" pin="1" pintype="passive"/>
@@ -1369,7 +1347,7 @@
       <node ref="U1" pin="3" pinfunction="DVDD" pintype="power_in"/>
       <node ref="U2" pin="5" pinfunction="VOUT" pintype="power_out"/>
     </net>
-    <net code="3" name="+3V3" class="Default">
+    <net code="3" name="+3V3" class="Power">
       <node ref="C13" pin="1" pintype="passive"/>
       <node ref="C14" pin="1" pintype="passive"/>
       <node ref="C6" pin="1" pintype="passive"/>
@@ -1396,26 +1374,25 @@
       <node ref="JP2" pin="2" pinfunction="B" pintype="passive"/>
       <node ref="JP3" pin="2" pinfunction="B" pintype="passive"/>
     </net>
-    <net code="6" name="/CSI_CLKN" class="Default">
+    <net code="6" name="/CSI_CLKN" class="MIPI">
       <node ref="J1" pin="8" pinfunction="Pin_8" pintype="passive"/>
       <node ref="U1" pin="12" pinfunction="CLKN" pintype="output"/>
     </net>
-    <net code="7" name="/CSI_CLKP" class="Default">
+    <net code="7" name="/CSI_CLKP" class="MIPI">
       <node ref="J1" pin="9" pinfunction="Pin_9" pintype="passive"/>
       <node ref="U1" pin="11" pinfunction="CLKP" pintype="output"/>
     </net>
-    <net code="8" name="/CSI_D0N" class="Default">
+    <net code="8" name="/CSI_D0N" class="MIPI">
       <node ref="J1" pin="2" pinfunction="Pin_2" pintype="passive"/>
       <node ref="U1" pin="10" pinfunction="D0N" pintype="output"/>
     </net>
-    <net code="9" name="/CSI_D0P" class="Default">
+    <net code="9" name="/CSI_D0P" class="MIPI">
       <node ref="J1" pin="3" pinfunction="Pin_3" pintype="passive"/>
       <node ref="U1" pin="9" pinfunction="D0P" pintype="output"/>
     </net>
     <net code="10" name="/CVBS_IN" class="Default">
       <node ref="D1" pin="1" pinfunction="A1" pintype="passive"/>
       <node ref="J2" pin="1" pinfunction="In" pintype="passive"/>
-      <node ref="J3" pin="1" pinfunction="In" pintype="passive"/>
       <node ref="R1" pin="1" pintype="passive"/>
     </net>
     <net code="11" name="/PWRDWN" class="Default">
@@ -1442,7 +1419,7 @@
       <node ref="TP5" pin="1" pinfunction="1" pintype="passive"/>
       <node ref="U1" pin="28" pinfunction="~{RESET}" pintype="input"/>
     </net>
-    <net code="15" name="GND" class="Default">
+    <net code="15" name="GND" class="Power">
       <node ref="C10" pin="2" pintype="passive"/>
       <node ref="C11" pin="2" pintype="passive"/>
       <node ref="C13" pin="2" pintype="passive"/>
@@ -1468,7 +1445,6 @@
       <node ref="J1" pin="4" pinfunction="Pin_4" pintype="passive"/>
       <node ref="J1" pin="7" pinfunction="Pin_7" pintype="passive"/>
       <node ref="J2" pin="2" pinfunction="Ext" pintype="passive"/>
-      <node ref="J3" pin="2" pinfunction="Ext" pintype="passive"/>
       <node ref="JP1" pin="1" pinfunction="A" pintype="passive"/>
       <node ref="R2" pin="2" pintype="passive"/>
       <node ref="TP6" pin="1" pinfunction="1" pintype="passive"/>
@@ -1506,7 +1482,7 @@
       <node ref="U1" pin="14" pinfunction="XTALP" pintype="passive"/>
       <node ref="Y1" pin="2" pinfunction="2" pintype="passive"/>
     </net>
-    <net code="22" name="PVDD" class="Default">
+    <net code="22" name="PVDD" class="Power">
       <node ref="C11" pin="1" pintype="passive"/>
       <node ref="C21" pin="1" pintype="passive"/>
       <node ref="C22" pin="1" pintype="passive"/>
