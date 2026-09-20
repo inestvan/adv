@@ -1,0 +1,15 @@
+# KiCad
+*.kicad_prl
+*-backups/
+*.bak
+*.kicad_sch-bak
+*.kicad_pcb-bak
+fp-info-cache
+_autosave-*
+~*.lck
+*.lck
+# text extracts of PDFs (regenerate with pdftotext -layout)
+docs/datasheets/*.txt
+# scratch
+/tmp/
+__pycache__/
