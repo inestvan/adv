@@ -284,9 +284,9 @@ def build():
     for n in range(1, 16):
         p = J1.pin(n)
         if n in (1, 4, 7, 10):
-            s.wire(p, (p[0] - 5.08, p[1])); s.power('GND', p[0] - 5.08, p[1], 270, val_pos=(p[0] - 9.53, p[1] + 0.635, 'right'))
+            s.wire(p, (p[0] - 5.08, p[1])); s.power('GND', p[0] - 5.08, p[1], 270, val_pos=(p[0] - 9.53, p[1] - 0.635, 'right'))
         elif n == 15:
-            s.wire(p, (p[0] - 5.08, p[1])); s.power('+3V3', p[0] - 5.08, p[1], 90, val_pos=(p[0] - 9.53, p[1] + 0.635, 'right'))
+            s.wire(p, (p[0] - 5.08, p[1])); s.power('+3V3', p[0] - 5.08, p[1], 90, val_pos=(p[0] - 9.53, p[1] - 0.635, 'right'))
         elif n in nets:
             s.wire(p, (p[0] - 10.16, p[1])); s.label(nets[n], p[0] - 10.16, p[1], 180)
         else:
