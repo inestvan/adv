@@ -78,9 +78,8 @@ def sfw15r():
     b.append(rect(-hw, Y(body_y0), hw, Y(body_y1), 'F.Fab', 0.1))
     b.append(poly([(-hw + 0.0, Y(body_y0)), (-hw + 1.2, Y(body_y0)), (-hw + 0.6, Y(body_y0) + 1.0)], 'F.Fab', 0.1))
     # Silk: side edges and front edge, keep clear of pads
-    b.append(line(-hw - 0.11, Y(body_y0 + 2.6 + 1.0), -hw - 0.11, Y(body_y1) + 0.11, 'F.SilkS'))
-    b.append(line(hw + 0.11, Y(body_y0 + 2.6 + 1.0), hw + 0.11, Y(body_y1) + 0.11, 'F.SilkS'))
-    b.append(line(-hw - 0.11, Y(body_y1) + 0.11, hw + 0.11, Y(body_y1) + 0.11, 'F.SilkS'))
+    b.append(line(-hw - 0.11, Y(body_y0 + 2.6 + 1.0), -hw - 0.11, Y(body_y1) - 0.4, 'F.SilkS'))
+    b.append(line(hw + 0.11, Y(body_y0 + 2.6 + 1.0), hw + 0.11, Y(body_y1) - 0.4, 'F.SilkS'))
     # pin 1 marker: triangle above pad 1
     x1 = -(n - 1) / 2
     b.append(poly([(x1 - 0.4, Y(pad_top) - 0.5), (x1 + 0.4, Y(pad_top) - 0.5), (x1, Y(pad_top) - 0.1)], 'F.SilkS', 0.1))
@@ -103,10 +102,10 @@ def rca_psg01546():
     hw = 9.7 / 2
     b.append(rect(fx0, -hw, fx1, hw, 'F.Fab', 0.1))
     b.append(rect(fx0 - 9.0, -8.3 / 2, fx0, 8.3 / 2, 'F.Fab', 0.1))   # barrel
-    b.append(rect(fx0 - 0.11, -hw - 0.11, fx1 + 0.11, hw + 0.11, 'F.SilkS'))
-    b.append(line(fx0 - 9.0, -8.3 / 2, fx0, -8.3 / 2, 'F.SilkS'))
-    b.append(line(fx0 - 9.0, 8.3 / 2, fx0, 8.3 / 2, 'F.SilkS'))
-    b.append(line(fx0 - 9.0, -8.3 / 2, fx0 - 9.0, 8.3 / 2, 'F.SilkS'))
+    for sy in (-hw - 0.11, hw + 0.11):      # side lines, interrupted around the ground tabs at x=3.8
+        b.append(line(fx0 + 0.4, sy, 1.6, sy, 'F.SilkS'))
+        b.append(line(6.0, sy, fx1 + 0.11, sy, 'F.SilkS'))
+    b.append(line(fx1 + 0.11, -hw - 0.11, fx1 + 0.11, hw + 0.11, 'F.SilkS'))
     b.append(rect(fx0 - 9.0 - 0.5, -hw - 0.5, fx1 + 0.5, hw + 0.5, 'F.CrtYd', 0.05))
     return footprint('RCA_Multicomp_PSG01546_Horizontal',
                      'RCA/phono jack, 3 pin, right angle, PCB mount, Multicomp Pro PSG01546 (generic 9.7 mm wide RCA jack pattern), Farnell datasheet 3029582',

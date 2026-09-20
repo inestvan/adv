@@ -1,5 +1,5 @@
 """Generate the KiCad 9 schematic hw/adv7280m-csi2.kicad_sch (single sheet, A3)."""
-import os, sys, math
+import os, sys, math, uuid
 sys.path.insert(0, os.path.dirname(__file__))
 from kisexp import *
 
@@ -30,7 +30,7 @@ class Part:
         self.hide_ref, self.hide_val = hide_ref, hide_val
         self.ref_pos, self.val_pos = ref_pos, val_pos
         self.prop_angle = prop_angle
-        self.uuid = new_uuid()
+        self.uuid = str(uuid.uuid5(uuid.NAMESPACE_URL, 'adv7280m-csi2/sym/' + ref))
         self.sym = sch.libsym(libid)
         self.pins = {p['number']: p for p in symbol_pins(self.sym)}
     def pin(self, num):
@@ -187,7 +187,7 @@ FP = dict(R='Resistor_SMD:R_0603_1608Metric', C0402='Capacitor_SMD:C_0402_1005Me
           JP='Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm', TP='TestPoint:TestPoint_Pad_D1.5mm',
           HOLE='MountingHole:MountingHole_2.2mm_M2', ESD='adv-parts:TI_X1SON-2_DPY0002A_1.0x0.6mm',
           FFC='adv-parts:Amphenol_SFW15R-1STE1LF', RCA='adv-parts:RCA_Multicomp_PSG01546_Horizontal',
-          SMA='Connector_Coaxial:SMA_BAT_Wireless_BWSMA-KWE-Z001', QFN='Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.6x3.6mm')
+          SMA='adv-parts:SMA_BWSMA-KWE-Z001_EdgeMount', QFN='Package_DFN_QFN:QFN-32-1EP_5x5mm_P0.5mm_EP3.6x3.6mm')
 
 LCSC = {'R22': 'C23345', 'R51': 'C23197', 'R10k': 'C25804', 'R4k7': 'C23162',
         'C100n_0402': 'C1525', 'C10n_0402': 'C15195', 'C100n_0603': 'C14663', 'C1u': 'C15849', 'C10u': 'C19702', 'C27p': 'C92670',
