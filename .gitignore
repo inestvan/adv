@@ -13,3 +13,5 @@ docs/datasheets/*.txt
 # scratch
 /tmp/
 __pycache__/
+# KiCad local history
+.history/

@@ -124,9 +124,42 @@ def ti_x1son_dpy():
                      'TI X1SON-2 DPY0002A 1.0x0.6 mm (TPD1E10B06DPY), land pattern per datasheet SLLSEB1G',
                      'X1SON DFN1006 ESD TVS', 'smd', b, (0, -1.3), (0, 1.3))
 
+KICAD_FP = os.environ.get('KICAD_FOOTPRINT_DIR') or ('C:/Program Files/KiCad/10.0/share/kicad/footprints' if os.name == 'nt' else '/usr/share/kicad/footprints')
+QFN_BASE = 'QFN-32-1EP_5x5mm_P0.5mm_EP3.6x3.6mm'
+QFN_NAME = QFN_BASE + '_Paste4'
+
+def sexp_blocks(text, head):
+    """(start, end) spans of every top-level-in-footprint s-expression starting with head, e.g. '(pad ""'."""
+    out, i = [], 0
+    while True:
+        i = text.find(head, i)
+        if i < 0: return out
+        depth, j = 0, i
+        while True:
+            if text[j] == '(': depth += 1
+            elif text[j] == ')':
+                depth -= 1
+                if depth == 0: break
+            j += 1
+        out.append((i, j + 1)); i = j + 1
+
+def qfn32_paste4():
+    """KiCad library QFN-32 5x5 EP 3.6 with the exposed-pad paste reworked for thermal vias: the library's 9 windows
+    (0.97 mm, pitch 1.2) would sit over the vias, so 4 windows 1.4 x 1.4 mm at (+-1.0, +-1.0) (~60 % paste coverage) and a
+    paste-free cross 0.6 mm wide for 5 GND vias 0.45/0.2 (holes >= 0.2 mm from the paste, tools/route_pcb.py)."""
+    t = open(os.path.join(KICAD_FP, 'Package_DFN_QFN.pretty', QFN_BASE + '.kicad_mod'), encoding='utf-8').read()
+    for a, b in reversed(sexp_blocks(t, '(pad ""')):
+        t = t[:a].rstrip(' \t') + t[b:]
+    paste = ''.join(f'\t(pad "" smd roundrect (at {x} {y}) (size 1.4 1.4) (layers "F.Paste") (roundrect_rratio 0.2))\n'
+                    for x in (-1.0, 1.0) for y in (-1.0, 1.0))
+    t = t.replace(f'(footprint "{QFN_BASE}"', f'(footprint "{QFN_NAME}"', 1)
+    t = t.replace('(descr "', '(descr "EP paste: 4 windows 1.4x1.4 mm (~60 %) with a paste-free cross for thermal vias (adv7280m-csi2). ', 1)
+    k = t.rstrip().rfind(')')
+    return t[:k] + paste + ')\n'
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    for fn, gen in [('Amphenol_SFW15R-1STE1LF', sfw15r), ('RCA_Multicomp_PSG01546_Horizontal', rca_psg01546), ('TI_X1SON-2_DPY0002A_1.0x0.6mm', ti_x1son_dpy)]:
+    for fn, gen in [('Amphenol_SFW15R-1STE1LF', sfw15r), ('RCA_Multicomp_PSG01546_Horizontal', rca_psg01546), ('TI_X1SON-2_DPY0002A_1.0x0.6mm', ti_x1son_dpy), (QFN_NAME, qfn32_paste4)]:
         with open(os.path.join(OUT, fn + '.kicad_mod'), 'w') as f:
             f.write(gen())
         print('wrote', fn)

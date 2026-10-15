@@ -1,0 +1,9 @@
+(version 1)
+
+# Video (CVBS) tracks are 0.13 mm; with the copper pour 0.4 mm away on both sides they are a 75 R
+# coplanar microstrip over In1 GND (docs/routing-rules.md). Only the pour is pushed back: pads and
+# tracks of other nets keep the normal 0.2 mm, so fine-pitch pads (U1, D3, C1) are not affected.
+# Net names, not the net class, so the rule also applies when tools/route_pcb.py fills the zones.
+(rule "video_pour_gap"
+  (constraint clearance (min 0.4mm))
+  (condition "B.Type == 'Zone' && A.NetName != B.NetName && (A.NetName == '/CVBS_*' || A.NetName == '/TV_OUT' || A.NetName == '/GX16_OUT' || A.NetName == 'Net-(U5-CH*' || A.NetName == 'Net-(C1-Pad1)' || A.NetName == 'Net-(U1-AIN1)')"))

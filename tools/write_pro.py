@@ -11,8 +11,8 @@ d['board']['design_settings'] = {
             "min_microvia_diameter": 0.2, "min_microvia_drill": 0.1, "min_resolved_spokes": 1, "min_silk_clearance": 0.0, "min_text_height": 0.6,
             "min_text_thickness": 0.08, "min_through_hole_diameter": 0.2, "min_track_width": 0.127, "min_via_annular_width": 0.1, "min_via_diameter": 0.45,
             "solder_mask_to_copper_clearance": 0.0, "use_height_for_length_calcs": True},
-  "diff_pair_dimensions": [{"gap": 0.15, "via_gap": 0.25, "width": 0.18}],
-  "track_widths": [0.0, 0.15, 0.18, 0.2, 0.3, 0.4],
+  "diff_pair_dimensions": [{"gap": 0.45, "via_gap": 0.25, "width": 0.3}, {"gap": 0.15, "via_gap": 0.25, "width": 0.18}],
+  "track_widths": [0.0, 0.13, 0.18, 0.2, 0.24, 0.3, 0.4],
   "via_dimensions": [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.5, "drill": 0.3}, {"diameter": 0.45, "drill": 0.2}]
 }
 def nc(name, clr, tw, dpw, dpg, prio):
@@ -20,10 +20,13 @@ def nc(name, clr, tw, dpw, dpg, prio):
             "diff_pair_width": dpw, "microvia_diameter": 0.3, "microvia_drill": 0.1, "bus_width": 12, "line_style": 0, "wire_width": 6,
             "pcb_color": "rgba(0, 0, 0, 0.000)", "schematic_color": "rgba(0, 0, 0, 0.000)", "priority": prio}
 d['net_settings'] = {
-  "classes": [nc("Default", 0.2, 0.2, 0.2, 0.25, 2147483647), nc("MIPI", 0.15, 0.18, 0.18, 0.15, 0), nc("Power", 0.2, 0.4, 0.2, 0.25, 1)],
+  "classes": [nc("Default", 0.2, 0.2, 0.2, 0.25, 2147483647), nc("MIPI", 0.15, 0.3, 0.3, 0.45, 0), nc("Power", 0.2, 0.4, 0.2, 0.25, 1),
+              nc("Video", 0.2, 0.13, 0.2, 0.25, 2)],   # 75 R: 0.13 mm, pour gap 0.4 mm from hw/adv7280m-csi2.kicad_dru
   "meta": {"version": 4}, "net_colors": None, "netclass_assignments": None,
   "netclass_patterns": [{"netclass": "MIPI", "pattern": "/CSI_*"}, {"netclass": "Power", "pattern": "+3V3"}, {"netclass": "Power", "pattern": "+1V8*"},
-                        {"netclass": "Power", "pattern": "PVDD"}, {"netclass": "Power", "pattern": "GND"}]
+                        {"netclass": "Power", "pattern": "PVDD"}, {"netclass": "Power", "pattern": "GND"},
+                        {"netclass": "Video", "pattern": "/CVBS_*"}, {"netclass": "Video", "pattern": "/TV_OUT"}, {"netclass": "Video", "pattern": "/GX16_OUT"},
+                        {"netclass": "Video", "pattern": "Net-(U5-CH*"}, {"netclass": "Video", "pattern": "Net-(C1-Pad1)"}, {"netclass": "Video", "pattern": "Net-(U1-AIN1)"}]
 }
 json.dump(d, open(p, 'w'), indent=2)
 print('wrote', p)

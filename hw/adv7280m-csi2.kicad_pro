@@ -31,6 +31,11 @@
       },
       "diff_pair_dimensions": [
         {
+          "gap": 0.45,
+          "via_gap": 0.25,
+          "width": 0.3
+        },
+        {
           "gap": 0.15,
           "via_gap": 0.25,
           "width": 0.18
@@ -38,9 +43,10 @@
       ],
       "track_widths": [
         0.0,
-        0.15,
+        0.13,
         0.18,
         0.2,
+        0.24,
         0.3,
         0.4
       ],
@@ -60,17 +66,28 @@
       ]
     },
     "ipc2581": {
+      "bom_rev": "",
       "dist": "",
       "distpn": "",
       "internal_id": "",
       "mfg": "",
-      "mpn": ""
+      "mpn": "",
+      "sch_revision": ""
     },
     "layer_pairs": [],
     "layer_presets": [],
     "viewports": []
   },
   "boards": [],
+  "component_class_settings": {
+    "assignments": [],
+    "meta": {
+      "version": 0
+    },
+    "sheet_component_classes": {
+      "enabled": false
+    }
+  },
   "cvpcb": {
     "equivalence_files": []
   },
@@ -105,12 +122,12 @@
       {
         "name": "MIPI",
         "clearance": 0.15,
-        "track_width": 0.18,
+        "track_width": 0.3,
         "via_diameter": 0.5,
         "via_drill": 0.3,
-        "diff_pair_gap": 0.15,
+        "diff_pair_gap": 0.45,
         "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.18,
+        "diff_pair_width": 0.3,
         "microvia_diameter": 0.3,
         "microvia_drill": 0.1,
         "bus_width": 12,
@@ -137,6 +154,24 @@
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
         "priority": 1
+      },
+      {
+        "name": "Video",
+        "clearance": 0.2,
+        "track_width": 0.13,
+        "via_diameter": 0.5,
+        "via_drill": 0.3,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "bus_width": 12,
+        "line_style": 0,
+        "wire_width": 6,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 2
       }
     ],
     "meta": {
@@ -164,27 +199,56 @@
       {
         "netclass": "Power",
         "pattern": "GND"
+      },
+      {
+        "netclass": "Video",
+        "pattern": "/CVBS_*"
+      },
+      {
+        "netclass": "Video",
+        "pattern": "/TV_OUT"
+      },
+      {
+        "netclass": "Video",
+        "pattern": "/GX16_OUT"
+      },
+      {
+        "netclass": "Video",
+        "pattern": "Net-(U5-CH*"
+      },
+      {
+        "netclass": "Video",
+        "pattern": "Net-(C1-Pad1)"
+      },
+      {
+        "netclass": "Video",
+        "pattern": "Net-(U1-AIN1)"
       }
     ]
   },
   "pcbnew": {
     "last_paths": {
-      "gencad": "",
       "idf": "",
       "netlist": "",
       "plot": "",
-      "pos_files": "",
       "specctra_dsn": "",
       "step": "",
-      "svg": "",
       "vrml": ""
     },
     "page_layout_descr_file": ""
   },
   "schematic": {
+    "bus_aliases": {},
     "legacy_lib_dir": "",
-    "legacy_lib_list": []
+    "legacy_lib_list": [],
+    "top_level_sheets": []
   },
   "sheets": [],
-  "text_variables": {}
+  "text_variables": {},
+  "tuning_profiles": {
+    "meta": {
+      "version": 0
+    },
+    "tuning_profiles_impedance_geometric": []
+  }
 }

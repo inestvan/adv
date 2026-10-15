@@ -6,55 +6,61 @@ import pcbnew
 from pcbnew import VECTOR2I, FromMM
 
 HW = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'hw'))
-KFP = '/usr/share/kicad/footprints'
+KFP = os.environ.get('KICAD_FOOTPRINT_DIR') or ('C:/Program Files/KiCad/10.0/share/kicad/footprints' if os.name == 'nt' else '/usr/share/kicad/footprints')
 PCB = os.path.join(HW, 'adv7280m-csi2.kicad_pcb')
 NET = os.path.join(HW, 'adv7280m-csi2.xml')
 
+# rev C: one solid board (decoder y < 32, THS7314 buffer y > 32), no breakaway slot
 BOARD_W, BOARD_H, CORNER_R = 42.0, 55.0, 1.5
-# breakaway slot between the decoder (y < SLOT_Y0) and the THS7314 buffer section (y > SLOT_Y1); two solid tabs
-SLOT_Y0, SLOT_Y1 = 32.0, 34.0
-TABS = [(7.0, 9.5), (30.5, 33.0)]   # x ranges of the tabs (GND-only tab left, CVBS_IN + GND tab right)
 
 # ref: (x, y, rot)  -- all top side
 PLACE = {
     'U1': (20.0, 10.5, 0),
     'J1': (3.0, 15.0, 270),        # FFC, cable exits -X (left edge), pin 1 at top
-    'J2': (37.0, 8.0, 180),        # RCA, barrel out of the right edge
     # analog input network (pad1/pad2 orientation chosen so that nets flow left->right)
-    'C1': (26.2, 12.9, 180), 'R2': (28.6, 15.0, 270), 'R1': (30.95, 14.9, 180), 'D1': (33.2, 16.4, 90), 'TP7': (30.4, 17.8, 0),
+    # AIN1 network up-right of U1: C1 at AIN1, node -> R1 (series, CVBS_IN east) and R2 (shunt) under the node, TP7 on the node
+    'C1': (26.1, 11.6, 180), 'R1': (29.85, 11.6, 180), 'R2': (28.3, 13.2, 180), 'TP7': (30.9, 15.4, 0),
     # VREF, AVDD decoupling
-    'C4': (24.0, 11.0, 90), 'C19': (24.9, 9.0, 0), 'C20': (26.9, 9.0, 0),
+    'C4': (24.0, 11.0, 90), 'C20': (24.9, 9.0, 0), 'C19': (26.9, 9.0, 0),       # AVDD: 10 nF (C20) next to the pin, 100 nF behind
     # crystal (pad 2 = XTALP on the left), load caps below the pads
-    'Y1': (24.8, 18.6, 180), 'C2': (22.95, 22.4, 90), 'C3': (26.65, 22.4, 90),
+    # crystal turned 90 deg: XTALN pad (oscillator input) right under pin 15, XTALP pad below it; C3 right of Y1, C2 under Y1
+    'Y1': (22.5, 16.9, 270), 'C2': (22.5, 21.7, 90), 'C3': (25.5, 17.0, 90),
     # MVDD / PVDD decoupling (power pad on top, towards U1)
-    'C17': (20.0, 16.0, 270), 'C18': (18.8, 16.0, 270), 'C21': (22.9, 14.4, 0), 'C22': (24.8, 14.4, 0),
+    'C18': (19.5, 17.3, 270), 'C17': (18.3, 17.3, 270),   # MVDD caps below the CLK pair: 10 nF (C18) first from the pin
+    'C22': (25.2, 14.3, 270), 'C21': (26.25, 14.3, 270),   # PVDD: pin 16 -> 10 nF (C22) -> 100 nF (C21), right of Y1  # PVDD at the U1 corner: pin 16 -> 10 nF (C22) -> 100 nF (C21), PVDD pads on top
     # DVDDIO / DVDD decoupling (left of U1, power pad towards the chip)
-    'C14': (15.4, 7.9, 180), 'C13': (15.4, 9.2, 180), 'C15': (15.4, 10.5, 180), 'C16': (15.4, 11.8, 180),
+    'C13': (15.4, 7.9, 180), 'C14': (15.4, 9.2, 180), 'C16': (15.4, 10.5, 180), 'C15': (15.4, 11.8, 180),   # 10 nF (C14, C16) next to pins 2 / 3
     # control (top): pull-ups with 3V3 pad on top (via to In2 3V3 band), signal pad towards U1
     'R4': (16.3, 5.5, 270), 'R5': (21.8, 5.5, 270), 'R3': (23.3, 5.5, 270), 'C5': (24.8, 5.5, 270),
     'R6': (26.3, 5.5, 270), 'R7': (27.8, 5.5, 270), 'TP5': (28.2, 2.7, 0),
     'JP3': (13.5, 2.7, 180), 'JP1': (19.6, 2.7, 0), 'JP2': (24.6, 2.7, 180),
     # power (bottom-left)
     'U2': (11.5, 22.0, 0), 'C6': (7.6, 24.9, 0), 'C7': (15.3, 20.8, 0), 'C8': (15.3, 22.6, 0), 'TP1': (11.4, 18.2, 0), 'TP2': (18.6, 21.7, 0),
-    'U3': (11.5, 27.0, 0), 'C9': (15.3, 25.8, 0), 'C10': (15.3, 27.6, 0), 'FB1': (18.4, 25.8, 0), 'C11': (21.4, 25.8, 0), 'TP8': (18.4, 28.3, 0),
-    'TP3': (26.3, 27.2, 0), 'TP4': (28.9, 27.2, 0), 'TP6': (36.5, 22.0, 0),
+    'U3': (11.5, 27.8, 0), 'C9': (15.3, 25.8, 0), 'C10': (15.3, 27.6, 0), 'FB1': (18.4, 25.8, 0), 'C11': (21.4, 25.8, 0), 'TP8': (18.4, 28.3, 0),
+    'TP3': (30.4, 8.4, 0), 'TP4': (30.4, 5.6, 0),      # I2C test points next to the pull-ups R6/R7 (rev C: no I2C track under Y1)
+    'TP6': (36.5, 22.0, 0),
+    'C29': (11.0, 24.3, 0), 'C30': (11.0, 25.5, 0),     # LDO input caps: pad 1 (+3V3) next to U2 / U3 VIN, own GND via each
     'H1': (8.0, 3.2, 0), 'H2': (35.5, 29.0, 0),
-    # ---- stage 5: THS7314 buffer section (y 34..55) ----
-    'H3': (2.6, 37.0, 0), 'H4': (39.4, 44.5, 0),
-    'J5': (7.0, 38.3, 0),                                   # CVBS source header, pin 1 (signal) on top
+    # ---- THS7314 buffer section (y 32..55) ----
+    'H3': (2.6, 32.8, 0), 'H4': (39.2, 37.0, 0),
+    'J5': (6.7, 37.9, 270),                                 # JST-PH input, cable exits the left edge, pin 1 (signal) on top
     'D3': (9.7, 40.0, 270), 'R8': (11.5, 40.0, 270),         # ESD + 75 R termination, signal pads on top, GND pads at the bottom
     'C23': (14.6, 41.0, 0), 'C24': (14.6, 43.0, 0), 'C25': (14.6, 45.0, 0),
     'U5': (21.2, 44.0, 0),                                  # SOIC-8, inputs left, outputs right, VS+ pin 4 bottom-left
-    'TP9': (28.6, 48.9, 0), 'C26': (20.0, 47.4, 180),   # C26 pad 1 (VS_BUF) on the right
-    'J4': (6.0, 46.5, 270),                                 # screw terminal on the bottom-left corner, pin 1 = +5 V (top), pin 2 = GND
+    'TP9': (24.3, 53.4, 0), 'C26': (20.0, 47.4, 180),   # C26 pad 1 (VS_BUF) on the right
+    'J4': (3.5, 45.35, 0),                                  # JST-XH 5 V, bottom-left, cable exits the bottom edge, pin 1 = +5 V (left)
     'D2': (15.5, 49.6, 180), 'C28': (20.3, 50.6, 90), 'FB2': (23.0, 49.0, 0), 'C27': (26.0, 50.6, 90),
-    'R9': (27.5, 40.4, 0), 'R10': (27.5, 43.4, 0), 'R11': (27.5, 46.4, 0),
-    'JP4': (32.5, 36.8, 180), 'J8': (37.0, 36.7, 90),        # JP4 pad 2 under the tab track; J8 pin 1 (signal) left
-    'J7': (30.0, 52.3, 90), 'J6': (37.0, 52.0, 90),          # monitor outputs along the bottom edge, pin 1 (signal) left
+    'R9': (27.5, 40.4, 0), 'R10': (27.5, 43.4, 0), 'R11': (27.5, 45.6, 0),
+    'J7': (29.8, 48.3, 0), 'J6': (36.9, 48.3, 0),            # JST-PH outputs on the bottom edge: J7 GX16 (CH3) left, J6 TV (CH2) right
 }
 
 def mm(x): return FromMM(x)
 def P(x, y): return VECTOR2I(mm(x), mm(y))
+
+# reference designators printed on silk (offset of the text from the part, mm); the rest stay on F.Fab
+SILK_REF = {'JP1': (0, -1.55), 'JP2': (0, -1.55), 'JP3': (0, -1.55), 'TP1': (-2.0, 0), 'TP2': (2.0, 0), 'TP3': (2.0, 0), 'TP4': (2.0, 0),
+            'TP5': (2.0, 0), 'TP6': (2.0, 0), 'TP7': (2.0, 0), 'TP8': (0, 1.55), 'TP9': (2.0, 0)}
+
 
 def load_fp(libid):
     lib, name = libid.split(':')
@@ -82,15 +88,8 @@ def outline(board):
     L = pcbnew.Edge_Cuts
     add_line(board, (r, 0), (W - r, 0), L)
     add_line(board, (W - r, H), (r, H), L)
-    # side edges are interrupted by the breakaway slot
     for x in (0, W):
-        add_line(board, (x, r), (x, SLOT_Y0), L); add_line(board, (x, SLOT_Y1), (x, H - r), L)
-    # slot: two horizontal edges broken by the tabs, tabs closed by short verticals
-    xs = [0.0] + [v for t in TABS for v in t] + [W]
-    for a, b in zip(xs[0::2], xs[1::2]):
-        add_line(board, (a, SLOT_Y0), (b, SLOT_Y0), L); add_line(board, (a, SLOT_Y1), (b, SLOT_Y1), L)
-    for t0, t1 in TABS:
-        add_line(board, (t0, SLOT_Y0), (t0, SLOT_Y1), L); add_line(board, (t1, SLOT_Y0), (t1, SLOT_Y1), L)
+        add_line(board, (x, r), (x, H - r), L)
     k = r * (1 - math.sqrt(0.5))
     add_arc(board, (W - r, 0), (W - k, k), (W, r), L)
     add_arc(board, (W, H - r), (W - k, H - k), (W - r, H), L)
@@ -134,15 +133,20 @@ def build():
         fp.SetAttributes(attrs)
         fp.SetPath(pcbnew.KIID_PATH('/' + c['tstamp']))
         for k, v in c['fields'].items():
-            if k in ('Footprint', 'Datasheet', 'Description') or not v: continue
-            fp.SetField(k, v); fp.GetFieldByName(k).SetVisible(False)
+            if k == 'Footprint': continue
+            fp.SetField(k, v); fp.GetField(k).SetVisible(False)   # KiCad 10 DRC compares Datasheet/Description with the symbol too
         if c['fields'].get('Assemble') == 'no':
             pass  # populated by the owner; keep in BOM/CPL logic at stage 4
         x, y, rot = PLACE[ref]
         fp.SetPosition(P(x, y)); fp.SetOrientationDegrees(rot)
-        # reference text: small, on silk
+        if ref in ('U2', 'U3'):
+            for pad in fp.Pads():
+                if pad.GetNumber() == '2': pad.SetLocalZoneConnection(pcbnew.ZONE_CONNECTION_FULL)   # LDO GND: solid to the pour (heat)
+        # reference text: small; on silk only for parts the user touches (jumpers, test points), elsewhere on F.Fab
         fp.Reference().SetTextSize(VECTOR2I(mm(0.6), mm(0.6))); fp.Reference().SetTextThickness(mm(0.1))
-        fp.Reference().SetLayer(pcbnew.F_Fab)
+        fp.Reference().SetLayer(pcbnew.F_SilkS if ref in SILK_REF else pcbnew.F_Fab)
+        if ref in SILK_REF:
+            dx, dy = SILK_REF[ref]; fp.Reference().SetTextAngleDegrees(0); fp.Reference().SetPosition(P(x + dx, y + dy))
         fp.Value().SetVisible(False)
         board.Add(fp); fps[ref] = fp
     for name, nodes in nets.items():
@@ -153,18 +157,14 @@ def build():
     # silkscreen texts
     add_text(board, 'CVBS>CSI-2 ADV7280-M', 21.0, 31.0, pcbnew.F_SilkS, 0.9, 0.15)
     add_text(board, 'TO RPi CAMERA', 10.5, 6.2, pcbnew.F_SilkS, 0.8, 0.12)
-    add_text(board, 'CVBS IN', 37.2, 15.8, pcbnew.F_SilkS, 0.8, 0.12)
-    add_text(board, 'rev B', 39.0, 31.0, pcbnew.F_SilkS, 0.8, 0.12)
-    add_text(board, 'ADV7280M-CSI2 rev B  github inestvan/adv', 21.0, 16.0, pcbnew.B_SilkS, 1.0, 0.15, mirror=True)
+    add_text(board, 'rev C', 39.0, 31.0, pcbnew.F_SilkS, 0.8, 0.12)
+    add_text(board, 'ADV7280M-CSI2 rev C  github inestvan/adv', 21.0, 16.0, pcbnew.B_SilkS, 1.0, 0.15, mirror=True)
     # buffer section silkscreen
     add_text(board, 'THS7314 BUFFER', 21.0, 39.2, pcbnew.F_SilkS, 0.9, 0.15)
-    add_text(board, 'CVBS IN', 7.0, 35.6, pcbnew.F_SilkS, 0.7, 0.12)
-    add_text(board, '5V IN', 2.2, 43.4, pcbnew.F_SilkS, 0.7, 0.12)
-    add_text(board, '+', 9.2, 46.5, pcbnew.F_SilkS, 0.9, 0.15); add_text(board, '-', 9.2, 51.6, pcbnew.F_SilkS, 0.9, 0.15)
-    add_text(board, 'TO ADV', 38.3, 39.3, pcbnew.F_SilkS, 0.7, 0.12)
-    add_text(board, 'MON2', 31.8, 50.0, pcbnew.F_SilkS, 0.7, 0.12); add_text(board, 'MON1', 38.3, 49.6, pcbnew.F_SilkS, 0.7, 0.12)
-    add_text(board, 'JP4 cut', 32.5, 39.3, pcbnew.F_SilkS, 0.6, 0.1)
-    add_text(board, 'THS7314 BUFFER rev B', 21.0, 44.5, pcbnew.B_SilkS, 0.9, 0.15, mirror=True)
+    add_text(board, 'CVBS IN', 4.5, 35.2, pcbnew.F_SilkS, 0.7, 0.12)
+    add_text(board, '+5V', 3.5, 42.6, pcbnew.F_SilkS, 0.7, 0.12); add_text(board, '-', 6.0, 42.6, pcbnew.F_SilkS, 0.9, 0.15)
+    add_text(board, 'GX16', 30.8, 45.6, pcbnew.F_SilkS, 0.7, 0.12); add_text(board, 'TV', 37.9, 45.6, pcbnew.F_SilkS, 0.7, 0.12)
+    add_text(board, 'THS7314 BUFFER rev C  SPRUT-2', 21.0, 44.5, pcbnew.B_SilkS, 0.9, 0.15, mirror=True)
     return board, fps, netobj
 
 def stackup_text():
