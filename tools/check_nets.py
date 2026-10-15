@@ -40,9 +40,9 @@ exact('/5V_IN', 'J4.1', 'D2.2'); exact('/5V_BUF', 'D2.1', 'C28.1', 'FB2.1'); exa
 exact('/CVBS_SRC', 'J5.1', 'R8.1', 'D3.1', 'C23.1', 'C24.1', 'C25.1')
 same('C23.2', 'U5.1'); same('C24.2', 'U5.2'); same('C25.2', 'U5.3'); diff('U5.1', 'U5.2'); diff('U5.2', 'U5.3')
 same('U5.8', 'R9.1'); same('U5.7', 'R10.1'); same('U5.6', 'R11.1')
-exact('/CVBS_IN', 'R9.2', 'R1.1')
+exact('/CVBS_IN', 'R9.2', 'R1.1', 'J2.1', 'J8.1', 'D1.1')
 exact('/TV_OUT', 'R10.2', 'J6.1'); exact('/GX16_OUT', 'R11.2', 'J7.1')
-for n in ['U5.5', 'J4.2', 'J5.2', 'J6.2', 'J7.2', 'R8.2', 'D3.2', 'C26.2', 'C27.2', 'C28.2']:
+for n in ['U5.5', 'J4.2', 'J5.2', 'J6.2', 'J7.2', 'J2.2', 'J8.2', 'D1.2', 'R8.2', 'D3.2', 'C26.2', 'C27.2', 'C28.2']:
     assert n in nets['GND'], n
 # nothing else unexpectedly connected
 for k, v in nets.items():

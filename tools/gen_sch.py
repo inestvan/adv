@@ -189,7 +189,8 @@ FP = dict(R='Resistor_SMD:R_0603_1608Metric', C0402='Capacitor_SMD:C_0402_1005Me
           FFC='adv-parts:Amphenol_SFW15R-1STE1LF', RCA='adv-parts:RCA_Multicomp_PSG01546_Horizontal',
           QFN='adv-parts:QFN-32-1EP_5x5mm_P0.5mm_EP3.6x3.6mm_Paste4',
           C0805='Capacitor_SMD:C_0805_2012Metric', SMA='Diode_SMD:D_SMA', SOIC8='Package_SO:SOIC-8_3.9x4.9mm_P1.27mm',
-          PH2='Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal', XH2='Connector_JST:JST_XH_S2B-XH-A_1x02_P2.50mm_Horizontal')
+          PH2='Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal', XH2='Connector_JST:JST_XH_S2B-XH-A_1x02_P2.50mm_Horizontal',
+          PADS2='Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical')   # 2 plated holes for soldering a coax
 
 LCSC = {'R22': 'C23345', 'R51': 'C23197', 'R10k': 'C25804', 'R4k7': 'C23162',
         'C100n_0402': 'C1525', 'C10n_0402': 'C15195', 'C100n_0603': 'C14663', 'C1u': 'C15849', 'C1u_0402': 'C52923', 'C4u7': 'C19666', 'C10u': 'C19702', 'C27p': 'C92670',
@@ -223,10 +224,21 @@ def build():
     s.power('GND', *R2.pin(2))
     TP7 = s.place('Connector:TestPoint', 'TP7', 'CVBS_T', xT, 101.6, 0, FP['TP'], '', 'CVBS after termination', ref_pos=(xT + 1.27, 99.06, 'left'), val_pos=(xT + 1.27, 101.6, 'left'))
     s.wire(TP7.pin(1), (xT, yA))
-    # rev C: the decoder input is driven only by buffer CH1 (R9, 75 R back-termination); no RCA jack, ESD sits at the board input (D3)
-    xJ = 134.62
-    s.wire(R1.pin(1), (xJ, yA))
-    s.label('CVBS_IN', xJ, yA, 180)
+    # decoder input = buffer CH1 (R9, 75 R) over the breakaway tab; J2 = solder pads for the coax when the board is split, D1 = ESD there
+    xE = 134.62
+    s.wire(R1.pin(1), (xE, yA))
+    D1 = s.place('Device:D_TVS', 'D1', 'TPD1E10B06', xE, 116.84, 270, FP['ESD'], LCSC['ESD'], 'ESD TVS on the decoder input (J2 pads when split), 12 pF',
+                 ref_pos=(xE + 2.54, 115.57, 'left'), val_pos=(xE + 2.54, 118.11, 'left'))
+    s.wire((xE, yA), D1.pin(1))
+    s.power('GND', *D1.pin(2))
+    xJ = 127.0
+    s.wire((xE, yA), (xJ, yA))
+    J2 = s.place('Connector_Generic:Conn_01x02', 'J2', 'CVBS_PADS', 116.84, 101.6, 180, FP['PADS2'], '',
+                 'Solder pads: coax from the buffer when the board is split (1 = centre, 2 = braid/GND)', extra={'Assemble': 'no'},
+                 ref_pos=(109.22, 99.06, 'left'), val_pos=(106.68, 106.68, 'left'))
+    s.path(J2.pin(1), (xJ, J2.pin(1)[1]), (xJ, yA))
+    s.power('GND', *J2.pin(2), rot=180)
+    s.label('CVBS_IN', xJ, yA, 0)
     for nm in ['AIN2', 'AIN3', 'AIN4', 'AIN5', 'AIN6', 'AIN7', 'AIN8']:
         s.nc(UP(nm))
     # VREF
@@ -393,7 +405,7 @@ def build():
     s.flag(322.58, 243.84); s.wire((317.5, 243.84), (322.58, 243.84))
     H1 = s.place('Mechanical:MountingHole', 'H1', 'M2', 340.36, 241.3, 0, FP['HOLE'], '', 'Mounting hole', in_bom=False)
     H2 = s.place('Mechanical:MountingHole', 'H2', 'M2', 355.6, 241.3, 0, FP['HOLE'], '', 'Mounting hole', in_bom=False)
-    s.text('Analog input (UG-637 Fig. 9): 75 R termination (R1+R2), gain 0.7, AC coupled by C1.\nCVBS_IN is driven by THS7314 CH1 through R9 (75 R); ESD protection is at the board input (D3).', 55.88, 140.97, 1.27)
+    s.text('Analog input (UG-637 Fig. 9): 75 R termination (R1+R2), gain 0.7, AC coupled by C1.\nCVBS_IN is driven by THS7314 CH1 through R9 (75 R) across the breakaway tab; when split: J8 -> coax -> J2, D1 = ESD at J2.', 55.88, 140.97, 1.27)
     s.text('Crystal 28.63636 MHz, fundamental, CL 20 pF:\nC = 2(CL-Cs)-Cpg = 2(20-3)-4 = 30 pF -> 27 pF (AN-1260)', 55.88, 165.1, 1.27)
     s.text('MIPI CSI-2, 1 data lane + clock (216 Mbps interlaced / 432 Mbps I2P).\nRoute as 100 R differential (2 x 50 R loosely coupled per UG-637), GND plane under; P/N crossover: both lines 2 vias + GND return vias.', 236.22, 104.14, 1.27)
 
@@ -401,9 +413,9 @@ def build():
     u = 1.27
     def P(x, y, j='left'): return (x * u, y * u, j)
     def Q(x, y): return (x * u, y * u)
-    # --- power: J4 JST-XH 5 V -> D2 -> C28 -> FB2 -> C27/C26 -> U5 VS+
-    J4 = s.place('Connector_Generic:Conn_01x02', 'J4', '5V_IN', 301 * u, 72 * u, 180, FP['XH2'], LCSC['XH2'],
-                 'JST-XH 2.5 mm right-angle (1 = +5 V, 2 = GND), 5 V from the case DC-DC 5 V module, hand-soldered', extra={'Assemble': 'no', 'MPN': 'S2B-XH-A(LF)(SN)'},
+    # --- power: J4 solder pads 5 V -> D2 -> C28 -> FB2 -> C27/C26 -> U5 VS+
+    J4 = s.place('Connector_Generic:Conn_01x02', 'J4', '5V_IN', 301 * u, 72 * u, 180, FP['PADS2'], '',
+                 'Solder pads for the 5 V wires from the case DC-DC 5 V module (1 = +5 V, 2 = GND)', extra={'Assemble': 'no'},
                  ref_pos=P(295, 70), val_pos=P(293, 76))
     s.power('GND', *J4.pin(2), rot=180)
     yr = 66 * u
@@ -429,9 +441,9 @@ def build():
                  ref_pos=P(364, 73), val_pos=P(374, 73))
     s.path(C26.pin(1), Q(372, 66), U5.pin(4))
     s.power('GND', *U5.pin(5))
-    # --- input: J5 JST-PH -> 75 R termination -> ESD -> 3 x 100 nF -> CH1..3 IN
-    J5 = s.place('Connector_Generic:Conn_01x02', 'J5', 'CVBS_IN', 313 * u, 90 * u, 180, FP['PH2'], LCSC['PH2'],
-                 'CVBS source input from the panel BNC, JST-PH 2.0 mm right-angle (1 = signal, 2 = GND), hand-soldered', extra={'Assemble': 'no', 'MPN': 'S2B-PH-K-S(LF)(SN)'},
+    # --- input: J5 solder pads -> 75 R termination -> ESD -> 3 x 100 nF -> CH1..3 IN
+    J5 = s.place('Connector_Generic:Conn_01x02', 'J5', 'CVBS_IN', 313 * u, 90 * u, 180, FP['PADS2'], '',
+                 'Solder pads: coax from the panel BNC (1 = centre, 2 = braid/GND)', extra={'Assemble': 'no'},
                  ref_pos=P(303, 88), val_pos=P(299, 94))
     s.power('GND', *J5.pin(2), rot=180)
     yi = 90 * u
@@ -453,19 +465,25 @@ def build():
     s.wire(U5.pin(8), R9.pin(1)); s.wire(U5.pin(7), R10.pin(1)); s.wire(U5.pin(6), R11.pin(1))
     # CH1 -> decoder input node (R1/R2 termination), hard-wired
     s.wire(R9.pin(2), Q(397, 78)); s.label('CVBS_IN', 397 * u, 78 * u, 0)
+    # J8 = solder pads for the coax to the decoder (J2) when the buffer section is snapped off
+    J8 = s.place('Connector_Generic:Conn_01x02', 'J8', 'TO_ADV_PADS', 397 * u, 64 * u, 90, FP['PADS2'], '',
+                 'Solder pads: coax to the decoder (J2) when the board is split (1 = centre, 2 = braid/GND)', extra={'Assemble': 'no'},
+                 ref_pos=P(392, 62), val_pos=P(386, 60))
+    s.wire(J8.pin(1), Q(397, 78))
+    s.path(J8.pin(2), Q(401, 68), Q(401, 70)); s.power('GND', 401 * u, 70 * u)
     # CH2 / CH3 -> monitor connectors
     s.path(R10.pin(2), Q(403, 84), Q(403, 100), Q(412, 100))
     s.path(R11.pin(2), Q(399, 90), Q(399, 110), Q(412, 110))
-    J6 = s.place('Connector_Generic:Conn_01x02', 'J6', 'TV', 416 * u, 100 * u, 0, FP['PH2'], LCSC['PH2'],
-                 'CVBS to the TV AV input, JST-PH 2.0 mm right-angle (1 = signal, 2 = GND), hand-soldered', extra={'Assemble': 'no', 'MPN': 'S2B-PH-K-S(LF)(SN)'})
-    J7 = s.place('Connector_Generic:Conn_01x02', 'J7', 'GX16', 416 * u, 110 * u, 0, FP['PH2'], LCSC['PH2'],
-                 'CVBS to the external monitor (panel GX16), JST-PH 2.0 mm right-angle (1 = signal, 2 = GND), hand-soldered', extra={'Assemble': 'no', 'MPN': 'S2B-PH-K-S(LF)(SN)'})
+    J6 = s.place('Connector_Generic:Conn_01x02', 'J6', 'TV', 416 * u, 100 * u, 0, FP['PADS2'], '',
+                 'Solder pads: coax to the TV AV input (1 = centre, 2 = braid/GND)', extra={'Assemble': 'no'})
+    J7 = s.place('Connector_Generic:Conn_01x02', 'J7', 'GX16', 416 * u, 110 * u, 0, FP['PADS2'], '',
+                 'Solder pads: coax to the external monitor, panel GX16 (1 = centre, 2 = braid/GND)', extra={'Assemble': 'no'})
     s.power('GND', *J6.pin(2), rot=180); s.power('GND', *J7.pin(2), rot=180)
     s.label('TV_OUT', 405 * u, 100 * u, 0); s.label('GX16_OUT', 405 * u, 110 * u, 0)
     H3 = s.place('Mechanical:MountingHole', 'H3', 'M2', 300 * u, 112 * u, 0, FP['HOLE'], '', 'Mounting hole', in_bom=False)
     H4 = s.place('Mechanical:MountingHole', 'H4', 'M2', 312 * u, 112 * u, 0, FP['HOLE'], '', 'Mounting hole', in_bom=False)
-    s.text('THS7314 BUFFER STAGE (rev C: one board for the SPRUT-2 case)', 300 * u, 46 * u, 2.0, bold=True)
-    s.text('5 V from the case DC-DC 5 V module via J4 (JST-XH); the Pi 4 is powered from the same module. The decoder itself runs from the Pi 3.3 V (J1 pin 15).\n'
+    s.text('THS7314 BUFFER STAGE (rev C: breakaway section, SPRUT-2 case)', 300 * u, 46 * u, 2.0, bold=True)
+    s.text('5 V from the case DC-DC 5 V module via J4 (solder pads); the Pi 4 is powered from the same module. The decoder itself runs from the Pi 3.3 V (J1 pin 15).\n'
            'Panel BNC -> coax -> J5 -> buffer: CH1 -> decoder, CH2 -> J6 TV (AV in), CH3 -> J7 GX16 monitor.', 300 * u, 52 * u, 1.27)
     s.text('Power: J4 -> D2 SS14 (reverse polarity, -0.4 V) -> C28 22 uF -> FB2 -> C27 10 uF + C26 100 nF at VS+ (SLOS513A: 0.1 uF at the pin, 22-100 uF on the line).\n'
            'THS7314 runs from 3 to 5 V; at ~4.6 V the output swing (4.5 V typ into 75 R) leaves >2 V margin for 2 Vpp video + 0.29 V clamp offset. No LDO needed. Iq 17 mA.',

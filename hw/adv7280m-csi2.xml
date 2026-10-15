@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>C:\Users\Inestvan\Desktop\adv-7280\hw\adv7280m-csi2.kicad_sch</source>
-    <date>2026-10-15T17:27:43</date>
+    <date>2026-10-15T18:39:40</date>
     <tool>Eeschema 10.0.6</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -807,6 +807,33 @@
         </unit>
       </units>
     </comp>
+    <comp ref="D1">
+      <value>TPD1E10B06</value>
+      <footprint>adv-parts:TI_X1SON-2_DPY0002A_1.0x0.6mm</footprint>
+      <description>ESD TVS on the decoder input (J2 pads when split), 12 pF</description>
+      <fields>
+        <field name="LCSC">C48260</field>
+        <field name="Footprint">adv-parts:TI_X1SON-2_DPY0002A_1.0x0.6mm</field>
+        <field name="Datasheet"/>
+        <field name="Description">ESD TVS on the decoder input (J2 pads when split), 12 pF</field>
+      </fields>
+      <libsource lib="Device" part="D_TVS" description="Bidirectional transient-voltage-suppression diode"/>
+      <property name="LCSC" value="C48260"/>
+      <property name="Sheetname" value="adv7280m-csi2"/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="diode TVS thyrector"/>
+      <property name="ki_fp_filters" value="TO-???* *_Diode_* *SingleDiode* D_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>f674c433-c449-5ad6-af87-d919b700602f</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
     <comp ref="D2">
       <value>SS14</value>
       <footprint>Diode_SMD:D_SMA</footprint>
@@ -1061,22 +1088,49 @@
         </unit>
       </units>
     </comp>
-    <comp ref="J4">
-      <value>5V_IN</value>
-      <footprint>Connector_JST:JST_XH_S2B-XH-A_1x02_P2.50mm_Horizontal</footprint>
-      <description>JST-XH 2.5 mm right-angle (1 = +5 V, 2 = GND), 5 V from the case DC-DC 5 V module, hand-soldered</description>
+    <comp ref="J2">
+      <value>CVBS_PADS</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <description>Solder pads: coax from the buffer when the board is split (1 = centre, 2 = braid/GND)</description>
       <fields>
-        <field name="LCSC">C157931</field>
+        <field name="LCSC"/>
         <field name="Assemble">no</field>
-        <field name="MPN">S2B-XH-A(LF)(SN)</field>
-        <field name="Footprint">Connector_JST:JST_XH_S2B-XH-A_1x02_P2.50mm_Horizontal</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
         <field name="Datasheet"/>
-        <field name="Description">JST-XH 2.5 mm right-angle (1 = +5 V, 2 = GND), 5 V from the case DC-DC 5 V module, hand-soldered</field>
+        <field name="Description">Solder pads: coax from the buffer when the board is split (1 = centre, 2 = braid/GND)</field>
       </fields>
       <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
-      <property name="LCSC" value="C157931"/>
+      <property name="LCSC" value=""/>
       <property name="Assemble" value="no"/>
-      <property name="MPN" value="S2B-XH-A(LF)(SN)"/>
+      <property name="Sheetname" value="adv7280m-csi2"/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>765c6bb8-f233-5952-ab90-f53202be2f04</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J4">
+      <value>5V_IN</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <description>Solder pads for the 5 V wires from the case DC-DC 5 V module (1 = +5 V, 2 = GND)</description>
+      <fields>
+        <field name="LCSC"/>
+        <field name="Assemble">no</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description">Solder pads for the 5 V wires from the case DC-DC 5 V module (1 = +5 V, 2 = GND)</field>
+      </fields>
+      <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="LCSC" value=""/>
+      <property name="Assemble" value="no"/>
       <property name="Sheetname" value="adv7280m-csi2"/>
       <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
       <property name="ki_keywords" value="connector"/>
@@ -1094,20 +1148,18 @@
     </comp>
     <comp ref="J5">
       <value>CVBS_IN</value>
-      <footprint>Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal</footprint>
-      <description>CVBS source input from the panel BNC, JST-PH 2.0 mm right-angle (1 = signal, 2 = GND), hand-soldered</description>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <description>Solder pads: coax from the panel BNC (1 = centre, 2 = braid/GND)</description>
       <fields>
-        <field name="LCSC">C173752</field>
+        <field name="LCSC"/>
         <field name="Assemble">no</field>
-        <field name="MPN">S2B-PH-K-S(LF)(SN)</field>
-        <field name="Footprint">Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
         <field name="Datasheet"/>
-        <field name="Description">CVBS source input from the panel BNC, JST-PH 2.0 mm right-angle (1 = signal, 2 = GND), hand-soldered</field>
+        <field name="Description">Solder pads: coax from the panel BNC (1 = centre, 2 = braid/GND)</field>
       </fields>
       <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
-      <property name="LCSC" value="C173752"/>
+      <property name="LCSC" value=""/>
       <property name="Assemble" value="no"/>
-      <property name="MPN" value="S2B-PH-K-S(LF)(SN)"/>
       <property name="Sheetname" value="adv7280m-csi2"/>
       <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
       <property name="ki_keywords" value="connector"/>
@@ -1125,20 +1177,18 @@
     </comp>
     <comp ref="J6">
       <value>TV</value>
-      <footprint>Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal</footprint>
-      <description>CVBS to the TV AV input, JST-PH 2.0 mm right-angle (1 = signal, 2 = GND), hand-soldered</description>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <description>Solder pads: coax to the TV AV input (1 = centre, 2 = braid/GND)</description>
       <fields>
-        <field name="LCSC">C173752</field>
+        <field name="LCSC"/>
         <field name="Assemble">no</field>
-        <field name="MPN">S2B-PH-K-S(LF)(SN)</field>
-        <field name="Footprint">Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
         <field name="Datasheet"/>
-        <field name="Description">CVBS to the TV AV input, JST-PH 2.0 mm right-angle (1 = signal, 2 = GND), hand-soldered</field>
+        <field name="Description">Solder pads: coax to the TV AV input (1 = centre, 2 = braid/GND)</field>
       </fields>
       <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
-      <property name="LCSC" value="C173752"/>
+      <property name="LCSC" value=""/>
       <property name="Assemble" value="no"/>
-      <property name="MPN" value="S2B-PH-K-S(LF)(SN)"/>
       <property name="Sheetname" value="adv7280m-csi2"/>
       <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
       <property name="ki_keywords" value="connector"/>
@@ -1156,26 +1206,53 @@
     </comp>
     <comp ref="J7">
       <value>GX16</value>
-      <footprint>Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal</footprint>
-      <description>CVBS to the external monitor (panel GX16), JST-PH 2.0 mm right-angle (1 = signal, 2 = GND), hand-soldered</description>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <description>Solder pads: coax to the external monitor, panel GX16 (1 = centre, 2 = braid/GND)</description>
       <fields>
-        <field name="LCSC">C173752</field>
+        <field name="LCSC"/>
         <field name="Assemble">no</field>
-        <field name="MPN">S2B-PH-K-S(LF)(SN)</field>
-        <field name="Footprint">Connector_JST:JST_PH_S2B-PH-K_1x02_P2.00mm_Horizontal</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
         <field name="Datasheet"/>
-        <field name="Description">CVBS to the external monitor (panel GX16), JST-PH 2.0 mm right-angle (1 = signal, 2 = GND), hand-soldered</field>
+        <field name="Description">Solder pads: coax to the external monitor, panel GX16 (1 = centre, 2 = braid/GND)</field>
       </fields>
       <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
-      <property name="LCSC" value="C173752"/>
+      <property name="LCSC" value=""/>
       <property name="Assemble" value="no"/>
-      <property name="MPN" value="S2B-PH-K-S(LF)(SN)"/>
       <property name="Sheetname" value="adv7280m-csi2"/>
       <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
       <property name="ki_keywords" value="connector"/>
       <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
       <sheetpath names="/" tstamps="/"/>
       <tstamps>6ee4fdee-4781-5df9-bade-2e446b33a498</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J8">
+      <value>TO_ADV_PADS</value>
+      <footprint>Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</footprint>
+      <description>Solder pads: coax to the decoder (J2) when the board is split (1 = centre, 2 = braid/GND)</description>
+      <fields>
+        <field name="LCSC"/>
+        <field name="Assemble">no</field>
+        <field name="Footprint">Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical</field>
+        <field name="Datasheet"/>
+        <field name="Description">Solder pads: coax to the decoder (J2) when the board is split (1 = centre, 2 = braid/GND)</field>
+      </fields>
+      <libsource lib="Connector_Generic" part="Conn_01x02" description="Generic connector, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)"/>
+      <property name="LCSC" value=""/>
+      <property name="Assemble" value="no"/>
+      <property name="Sheetname" value="adv7280m-csi2"/>
+      <property name="Sheetfile" value="adv7280m-csi2.kicad_sch"/>
+      <property name="ki_keywords" value="connector"/>
+      <property name="ki_fp_filters" value="Connector*:*_1x??_*"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a0ff00f9-4fa9-53f0-bcb8-5a200db9fe6b</tstamps>
       <units>
         <unit name="A">
           <pins>
@@ -2395,6 +2472,9 @@
       <node ref="U1" pin="9" pinfunction="D0P_9" pintype="output"/>
     </net>
     <net code="12" name="/CVBS_IN" class="Video">
+      <node ref="D1" pin="1" pinfunction="A1_1" pintype="passive"/>
+      <node ref="J2" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
+      <node ref="J8" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="R1" pin="1" pintype="passive"/>
       <node ref="R9" pin="2" pintype="passive"/>
     </net>
@@ -2470,15 +2550,18 @@
       <node ref="C7" pin="2" pintype="passive"/>
       <node ref="C8" pin="2" pintype="passive"/>
       <node ref="C9" pin="2" pintype="passive"/>
+      <node ref="D1" pin="2" pinfunction="A2_2" pintype="passive"/>
       <node ref="D3" pin="2" pinfunction="A2_2" pintype="passive"/>
       <node ref="J1" pin="1" pinfunction="Pin_1_1" pintype="passive"/>
       <node ref="J1" pin="10" pinfunction="Pin_10_10" pintype="passive"/>
       <node ref="J1" pin="4" pinfunction="Pin_4_4" pintype="passive"/>
       <node ref="J1" pin="7" pinfunction="Pin_7_7" pintype="passive"/>
+      <node ref="J2" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="J4" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="J5" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="J6" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="J7" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
+      <node ref="J8" pin="2" pinfunction="Pin_2_2" pintype="passive"/>
       <node ref="JP1" pin="1" pinfunction="A_1" pintype="passive"/>
       <node ref="R2" pin="2" pintype="passive"/>
       <node ref="R8" pin="2" pintype="passive"/>
@@ -2496,7 +2579,7 @@
       <node ref="R2" pin="1" pintype="passive"/>
       <node ref="TP7" pin="1" pinfunction="1_1" pintype="passive"/>
     </net>
-    <net code="23" name="Net-(U1-AIN1)" class="Default">
+    <net code="23" name="Net-(U1-AIN1)" class="Video">
       <node ref="C1" pin="2" pintype="passive"/>
       <node ref="U1" pin="17" pinfunction="AIN1_17" pintype="passive"/>
     </net>
