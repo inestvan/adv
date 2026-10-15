@@ -171,7 +171,7 @@ def build():
     add_text(board, 'TO RPi CAMERA', 10.5, 6.2, pcbnew.F_SilkS, 0.8, 0.12)
     add_text(board, 'rev C', 39.0, 31.0, pcbnew.F_SilkS, 0.8, 0.12)
     add_text(board, 'CVBS', 33.7, 30.75, pcbnew.F_SilkS, 0.7, 0.12); add_text(board, 'TO ADV', 33.7, 37.75, pcbnew.F_SilkS, 0.7, 0.12)
-    add_text(board, 'СПРУТ-М', 21.0, 35.4, pcbnew.F_SilkS, 1.6, 0.25)   # product name, free band between the decoder and the buffer
+    add_text(board, 'SPRUT-M', 21.0, 35.4, pcbnew.F_SilkS, 1.6, 0.25)   # product name (Latin only: JLCPOST rejects Cyrillic on silkscreen)
     add_text(board, 'ADV7280M-CSI2 rev C  github inestvan/adv', 21.0, 16.0, pcbnew.B_SilkS, 1.0, 0.15, mirror=True)
     # buffer section silkscreen
     add_text(board, 'THS7314 BUFFER', 21.0, 39.2, pcbnew.F_SilkS, 0.9, 0.15)
