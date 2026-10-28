@@ -12,7 +12,9 @@ W_MIPI, W_SIG, W_CVBS, W_PWR, W_PWR_S = 0.30, 0.2, 0.13, 0.4, 0.3
 # W_PIN for the 0.5 mm pitch stretch of the CLK pair under the chip (docs/routing-rules.md)
 W_NECK, W_PIN = 0.18, 0.24
 VIA, VIA_DRILL = 0.5, 0.3
-VIA_S, VIA_S_DRILL = 0.45, 0.2      # MIPI layer-change vias and their GND return vias
+# MIPI layer-change vias, their GND return vias and the U1 EP vias: 0.3 mm hole = JLCPCB standard via (a 0.2 mm hole
+# switches the order to the paid high-precision via option, +4-wire Kelvin test, +TG155: ~$37 on 5 boards)
+VIA_S, VIA_S_DRILL = 0.5, 0.3
 BOARD_T = 1.6
 
 def mm(x): return FromMM(x)
@@ -198,14 +200,14 @@ def route(r):
                     ('J1.1', (4.6, 8.0)), ('J1.4', (4.6, 11.0)), ('J1.7', (4.6, 14.0)), ('J1.10', (4.6, 17.0))]:
         r.gnd_via(ref, xy)
     r.track('GND', [U('U1.4'), (18.3, 10.25)], W_SIG); r.track('GND', [U('U1.1'), (18.3, 8.75)], W_SIG)   # corner/mid GND pads straight into the EP
-    r.track('GND', [U('C5.2'), (25.38, 6.15)], W_SIG); r.via('GND', (25.38, 6.15), VIA_S, VIA_S_DRILL)   # between the B.Cu I2C legs (y 5.4 / 6.9)
+    r.track('GND', [U('C5.2'), (25.33, 6.15)], W_SIG); r.via('GND', (25.33, 6.15), VIA_S, VIA_S_DRILL)   # between the B.Cu I2C legs (y 5.4 / 6.9), clear of R6
     r.track('GND', [U('C19.2'), (27.38, 9.8), (27.0, 10.2), (27.0, 10.6)], W_SIG); r.via('GND', (27.0, 10.6))
     r.track('GND', [U('C21.2'), (25.72, 15.2)], W_SIG)   # C21 / C22 share the GND via between their bottom pads
     r.track('GND', [U('C14.2'), (13.5, 8.55), U('C13.2')], W_SIG); r.via('GND', (13.5, 8.55))
     r.track('GND', [U('C15.2'), (13.5, 11.15), U('C16.2')], W_SIG); r.via('GND', (13.5, 11.15))
     # U1 exposed pad: 5 thermal/GND vias in the paste-free cross between the 4 paste windows (gen_pcb.ep_paste)
     for dx, dy in [(0, 0), (0, -1.2), (0, 1.2), (-1.2, 0), (1.2, 0)]:
-        r.via('GND', (20.0 + dx, 10.5 + dy), VIA_S, VIA_S_DRILL)   # 0.2 mm holes: >= 0.2 mm from the paste
+        r.via('GND', (20.0 + dx, 10.5 + dy), VIA_S, VIA_S_DRILL)   # 0.3 mm holes: >= 0.2 mm from the paste windows
     # ================= THS7314 buffer section =================
     # input node
     r.track('/CVBS_SRC', [U('J5.1'), (7.9, 37.9), (8.3, 38.3), (12.9, 38.3), (12.9, 45.0), U('C25.1')], W_CVBS)

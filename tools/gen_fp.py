@@ -145,15 +145,15 @@ def sexp_blocks(text, head):
 
 def qfn32_paste4():
     """KiCad library QFN-32 5x5 EP 3.6 with the exposed-pad paste reworked for thermal vias: the library's 9 windows
-    (0.97 mm, pitch 1.2) would sit over the vias, so 4 windows 1.4 x 1.4 mm at (+-1.0, +-1.0) (~60 % paste coverage) and a
-    paste-free cross 0.6 mm wide for 5 GND vias 0.45/0.2 (holes >= 0.2 mm from the paste, tools/route_pcb.py)."""
+    (0.97 mm, pitch 1.2) would sit over the vias, so 4 windows 1.35 x 1.35 mm at (+-1.025, +-1.025) (~56 % paste coverage) and a
+    paste-free cross 0.7 mm wide for 5 GND vias 0.5/0.3 (holes >= 0.2 mm from the paste, tools/route_pcb.py)."""
     t = open(os.path.join(KICAD_FP, 'Package_DFN_QFN.pretty', QFN_BASE + '.kicad_mod'), encoding='utf-8').read()
     for a, b in reversed(sexp_blocks(t, '(pad ""')):
         t = t[:a].rstrip(' \t') + t[b:]
-    paste = ''.join(f'\t(pad "" smd roundrect (at {x} {y}) (size 1.4 1.4) (layers "F.Paste") (roundrect_rratio 0.2))\n'
-                    for x in (-1.0, 1.0) for y in (-1.0, 1.0))
+    paste = ''.join(f'\t(pad "" smd roundrect (at {x} {y}) (size 1.35 1.35) (layers "F.Paste") (roundrect_rratio 0.2))\n'
+                    for x in (-1.025, 1.025) for y in (-1.025, 1.025))
     t = t.replace(f'(footprint "{QFN_BASE}"', f'(footprint "{QFN_NAME}"', 1)
-    t = t.replace('(descr "', '(descr "EP paste: 4 windows 1.4x1.4 mm (~60 %) with a paste-free cross for thermal vias (adv7280m-csi2). ', 1)
+    t = t.replace('(descr "', '(descr "EP paste: 4 windows 1.35x1.35 mm (~56 %) with a paste-free cross for thermal vias (adv7280m-csi2). ', 1)
     k = t.rstrip().rfind(')')
     return t[:k] + paste + ')\n'
 

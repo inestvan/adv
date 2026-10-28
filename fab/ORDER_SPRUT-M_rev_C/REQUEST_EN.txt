@@ -1,0 +1,45 @@
+Subject: Quote request: 4-layer PCB + SMT assembly (PCBA) at JLCPCB, ADV7280M-CSI2 rev C (SPRUT-M), delivery to Russia
+
+Hello,
+
+Please quote a JLCPCB order for a printed circuit board with SMT assembly (PCBA, parts sourced by JLCPCB), delivered to Russia. I need the total price including shipping, the lead time and the payment method.
+
+Attachments:
+  - adv7280m-csi2-gerber.zip  - Gerber and drill files (all layers; the .gbrjob inside has the stackup)
+  - BOM_JLCPCB.csv            - bill of materials with LCSC part numbers (for assembly)
+  - CPL_JLCPCB.csv            - component placement file (for assembly)
+  - render-top.png            - render of the assembled board to check part orientation
+
+PCB
+  Material: FR-4
+  Layers: 4
+  Size: 42 x 55 mm (as per Gerber)
+  Quantity: 5
+  Different designs: 1 (a single board with a slot and two tabs, not a panel)
+  Thickness: 1.6 mm
+  Impedance control: yes, stackup JLC04161H-7628
+  Surface finish: ENIG (LeadFree HASL if ENIG is not available)
+  Solder mask: green
+  Vias: plugged (tented is not offered for 4 layers); min via hole 0.3 mm / 0.45 mm - standard option
+  Order number on the board: may be added
+
+SMT ASSEMBLY (PCBA)
+  Type: Economic, top side only
+  Assembled boards: 3 (out of 5)
+  Parts: per BOM_JLCPCB.csv / CPL_JLCPCB.csv (23 line items, 51 parts), all sourced by JLCPCB
+  Important: U1 = ADV7280BCPZ-M, LCSC C662255 (the "-M" suffix is mandatory). Stock is low.
+  If it is out of stock, please tell me and offer a pre-order; do not substitute another chip.
+  Do not substitute any other part without my approval.
+  Please send me the DFM / placement preview for approval before payment
+  (orientation of U1, U2, U3, U5, D2, J1).
+
+Questions:
+  1. Can you place a JLCPCB order with SMT assembly (PCBA) and parts sourced by JLCPCB, or PCB only?
+  2. What is your fee: a percentage of the JLCPCB total, plus shipping by weight?
+  3. Total price for the order above delivered to Russia (CDEK or Russian Post), and the lead time?
+  4. Payment: bank card / transfer, and at what stage (before ordering or after JLCPCB confirms)?
+  5. Will I receive the JLCPCB DFM preview and any questions from the factory before payment?
+  6. If a part is out of stock at JLCPCB, do you inform me or substitute it yourself? (Please do not substitute.)
+  7. Can the two remaining bare boards (not assembled) be shipped together with the assembled ones?
+
+Thank you!

@@ -1,0 +1,59 @@
+Тема: Расчёт: PCB 4 слоя + SMT-монтаж на JLCPCB, ADV7280M-CSI2 rev C (SPRUT-M)
+
+Здравствуйте!
+
+Прошу рассчитать заказ на JLCPCB: печатная плата + SMT-монтаж с закупкой компонентов
+силами JLCPCB (PCBA), с доставкой в Россию. Сообщите, пожалуйста, итоговую стоимость
+с доставкой, срок и способ оплаты.
+
+Вложения:
+  - adv7280m-csi2-gerber.zip — Gerber-файлы и сверловка (все слои, внутри .gbrjob со стеком)
+  - BOM_JLCPCB.csv — перечень компонентов с кодами LCSC (для монтажа)
+  - CPL_JLCPCB.csv — координаты компонентов (для монтажа)
+  - render-top.png — вид собранной платы для сверки ориентации деталей
+
+ПЕЧАТНАЯ ПЛАТА (поля на jlcpcb.com/quote)
+  Base Material: FR-4
+  Layers: 4
+  Dimensions: 42 x 55 мм (подставится из Gerber)
+  PCB Qty: 5
+  Different Design: 1 (одна плата с прорезью и двумя перемычками, не панель)
+  Delivery Format: Single PCB
+  PCB Thickness: 1.6 мм
+  PCB Color: Green, Silkscreen: White
+  Material Type: FR4 TG135
+  Surface Finish: ENIG, Gold Thickness 1U"
+  Outer Copper Weight: 1 oz, Inner Copper Weight: 0.5 oz
+  Specify Layer Sequence: No
+  Specify Stackup: Yes -> JLC04161H-7628 (обязательно)
+  Impedance Control: No requirement
+  Via Covering: Plugged
+  Min via hole size/diameter: 0.3mm/(0.4/0.45mm) (стандарт; все отверстия на плате 0,3 мм)
+  Board Outline Tolerance: ±0.2mm
+  Confirm Production File: Yes
+  Mark on PCB: Remove Mark (или как удобнее)
+  Electrical Test: Flying Probe Fully Test
+  Gold Fingers / Castellated Holes / Edge Plating и прочее: No
+
+МОНТАЖ (PCB Assembly)
+  PCBA Type: Economic
+  Assembly Side: Top Side
+  PCBA Qty: 3 (из 5; остальные 2 платы — без монтажа, в той же посылке)
+  Tooling holes: Added by JLCPCB
+  Confirm Parts Placement: Yes
+  Компоненты: по BOM_JLCPCB.csv / CPL_JLCPCB.csv (23 позиции, 51 деталь), закупка силами JLCPCB.
+  Отверстия J2, J4–J8, тестовые точки TP и перемычки JP — пустые площадки, ничего не ставить.
+
+  ВАЖНО: U1 = ADV7280BCPZ-M, LCSC C662255 (именно с суффиксом -M). На складе мало.
+  Если нет в наличии — прошу сообщить и предложить предзаказ; на другой чип не заменять.
+  Остальные компоненты тоже не заменять на аналоги без согласования.
+  Прошу прислать предпросмотр расстановки (DFM / placement preview) на подтверждение до оплаты
+  (ориентация U1, U2, U3, U5, D2, J1).
+
+ВОПРОСЫ
+  1. Итоговая стоимость: плата + монтаж + компоненты + ваша комиссия + доставка в Россию.
+  2. Срок: изготовление + доставка.
+  3. Как и когда оплачивать?
+  4. Пришлёте ли скриншот/ссылку заказа на JLCPCB и предпросмотр монтажа до оплаты?
+
+Спасибо!

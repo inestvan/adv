@@ -13,7 +13,7 @@ d['board']['design_settings'] = {
             "solder_mask_to_copper_clearance": 0.0, "use_height_for_length_calcs": True},
   "diff_pair_dimensions": [{"gap": 0.45, "via_gap": 0.25, "width": 0.3}, {"gap": 0.15, "via_gap": 0.25, "width": 0.18}],
   "track_widths": [0.0, 0.13, 0.18, 0.2, 0.24, 0.3, 0.4],
-  "via_dimensions": [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.5, "drill": 0.3}, {"diameter": 0.45, "drill": 0.2}]
+  "via_dimensions": [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.5, "drill": 0.3}]   # one via size: 0.3 mm hole = JLCPCB standard (no paid 0.2 mm option)
 }
 def nc(name, clr, tw, dpw, dpg, prio):
     return {"name": name, "clearance": clr, "track_width": tw, "via_diameter": 0.5, "via_drill": 0.3, "diff_pair_gap": dpg, "diff_pair_via_gap": 0.25,
