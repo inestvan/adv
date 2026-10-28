@@ -25,7 +25,7 @@ PCB
 
 SMT ASSEMBLY (PCBA)
   Type: Economic, top side only
-  Assembled boards: 3 (out of 5)
+  Assembled boards: 2 (out of 5)
   Parts: per BOM_JLCPCB.csv / CPL_JLCPCB.csv (23 line items, 51 parts), all sourced by JLCPCB
   Important: U1 = ADV7280BCPZ-M, LCSC C662255 (the "-M" suffix is mandatory). Stock is low.
   If it is out of stock, please tell me and offer a pre-order; do not substitute another chip.

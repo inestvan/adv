@@ -38,7 +38,7 @@
 МОНТАЖ (PCB Assembly)
   PCBA Type: Economic
   Assembly Side: Top Side
-  PCBA Qty: 3 (из 5; остальные 2 платы — без монтажа, в той же посылке)
+  PCBA Qty: 2 (из 5; остальные 3 платы — без монтажа, в той же посылке)
   Tooling holes: Added by JLCPCB
   Confirm Parts Placement: Yes
   Компоненты: по BOM_JLCPCB.csv / CPL_JLCPCB.csv (23 позиции, 51 деталь), закупка силами JLCPCB.
