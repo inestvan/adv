@@ -1,0 +1,7 @@
+# /etc/default/sprutm-grabber - settings of the SPRUT-M USB grabber (read by both services)
+# Input standard: pal (720x576 @ 25) or ntsc (720x480 @ 29.97). After a change:
+#   sudo systemctl restart sprutm-gadget sprutm-uvc     (and re-plug the USB cable)
+STD=pal
+# Extra options of sprutm-uvc, e.g. "--swap" (lines swapped), "--invert-phase" (motion jerks back and forth),
+# "-v" (statistics in the journal every 5 s)
+EXTRA_ARGS=

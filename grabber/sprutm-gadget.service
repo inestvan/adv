@@ -1,0 +1,13 @@
+[Unit]
+Description=SPRUT-M USB UVC gadget (Pi 4 USB-C as a webcam)
+After=sys-kernel-config.mount systemd-modules-load.service
+Before=sprutm-uvc.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/sprutm-gadget.sh start
+ExecStop=/usr/local/sbin/sprutm-gadget.sh stop
+
+[Install]
+WantedBy=multi-user.target

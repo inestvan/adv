@@ -1,0 +1,15 @@
+[Unit]
+Description=SPRUT-M grabber: ADV7280-M fields -> lossless YUY2 frames -> USB UVC
+Requires=sprutm-gadget.service
+After=sprutm-gadget.service
+
+[Service]
+Environment=STD=pal EXTRA_ARGS=
+EnvironmentFile=-/etc/default/sprutm-grabber
+ExecStartPre=/sbin/modprobe i2c-dev
+ExecStart=/usr/local/bin/sprutm-uvc --std ${STD} $EXTRA_ARGS
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

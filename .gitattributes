@@ -1,2 +1,4 @@
 # shell scripts must keep LF on Windows checkouts (sh fails on CRLF)
 *.sh text eol=lf
+# Pi-side files of the USB grabber: LF only (sh, systemd and gcc on the Pi)
+grabber/** text eol=lf

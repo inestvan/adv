@@ -36,6 +36,7 @@ ERC и DRC (с проверкой соответствия схеме) — 0 о�
 | `docs/datasheets/`, `docs/ref/` | даташит ADV7280 Rev. A, UG-637 Rev. A, AN-1260, THS7314 (SLOS513A), схемы Pi 4 и Camera Module v2.1, overlay/драйвер из ядра Pi |
 | `fab/adv7280m-csi2-gerber.zip` | Gerber (RS-274X, Protel-расширения) + Excellon drill + gbrjob со стеком |
 | `fab/BOM_JLCPCB.csv`, `fab/CPL_JLCPCB.csv` | BOM и позиции в формате JLCPCB (только то, что собирает JLCPCB) |
+| `grabber/` | Pi 4 как USB-вебкамера без потерь: `sprutm-uvc.c` (захват полей, склейка, UVC), `sprutm-gadget.sh`, службы systemd, `install.sh`; см. [docs/usb-grabber.md](docs/usb-grabber.md) |
 | `tools/` | генераторы: `gen_lib.py` → `gen_fp.py` → `gen_sch.py` → `gen_pcb.py` → `route_pcb.py` → `write_pro.py`; `check_nets.py` проверяет нетлист; `fab.sh` делает Gerber/BOM/CPL, `render.sh` — картинки |
 
 Пересборка с нуля (Linux; `gen_pcb.py` и `route_pcb.py` нужен Python с модулем `pcbnew` из KiCad):
@@ -142,9 +143,10 @@ TP1 3V3 · TP2 1V8D · TP8 1V8A · TP3 SDA · TP4 SCL · TP5 RESET · TP6 GND ·
 
 Плата отдаёт только MIPI CSI-2, напрямую к ПК её не подключить. Варианты через Pi 4:
 
-* **UVC-вебкамера по USB-C.** Pi 4 умеет режим USB-устройства: `dtoverlay=dwc2` в config.txt, модуль `libcomposite`,
-  и `uvc-gadget` (github.com/raspberrypi/uvc-gadget или kbingham/uvc-gadget с источником V4L2 `/dev/video0`).
-  ПК видит обычную вебкамеру 720×576. Не проверялось на этой плате, но это штатный механизм Pi.
+* **UVC-вебкамера по USB-C — готовый вариант в `grabber/`**, инструкция [docs/usb-grabber.md](docs/usb-grabber.md).
+  Pi 4 подключается к ноутбуку кабелем USB-C, ноутбук видит обычную вебкамеру 720×576 YUY2 @ 25 без сжатия:
+  два поля декодера склеиваются построчно, без потерь, деинтерлейс делает ноутбук (OBS «Yadif 2x»).
+  Установка: `sudo sh grabber/install.sh pal` и перезагрузка. На железе ещё не запускалось.
 * **Поток по сети**: `ffmpeg -f v4l2 -i /dev/video0 ... -f mpegts udp://ПК:5000` или GStreamer/RTSP; на ПК VLC/OBS/ffplay.
 
 ## Заказ и сборка на JLCPCB
