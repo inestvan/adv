@@ -86,6 +86,7 @@ td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 			</span></span>
 			<span class="cold hidden" id="coldbox" title="Насколько холоднее цвета в режиме «Как ТВ»: 100 % — как намерено по фото монитора, 0 — без сдвига. Двойной щелчок — 100 %"><span class="label">Холод</span><input type="range" id="cold" min="0" max="200" value="100"><span id="coldv">100 %</span></span>
 			<span><span class="label">Шумодав</span><span class="seg" id="nr" title="Усреднение с предыдущим кадром там, где картинка не меняется (как 3D NR в телевизоре); только в режиме «Авто 50»"><button data-v="1" class="on">вкл</button><button data-v="0">выкл</button></span></span>
+			<span><span class="label">3D-гребёнка</span><span class="seg" id="comb" title="Как в хорошем телевизоре: декодер отдаёт яркость без строчной гребёнки (вся мелкая детализация, например мелкий текст, плюс сетка цветовой поднесущей), а страница убирает сетку, складывая поле с тем же полем двумя кадрами раньше — там поднесущая перевёрнута. Где есть движение — сглаживание по 3 точкам. USB-вебкамера в это время показывает сетку"><button data-v="1">вкл</button><button data-v="0" class="on">выкл</button></span></span>
 			<span><span class="label">Края</span><span class="seg" id="crop" title="Обрезать края гашения: по 9 точек слева и справа (активная ширина PAL 702), по 4 строки сверху и снизу (там полстроки и мигающая тёмная строка). Телевизор обрезает края всегда (overscan)"><button data-v="1" class="on">обрезать</button><button data-v="0">весь кадр</button></span></span>
 			<span><span class="label">Растяжение</span><span class="seg" id="scale" title="Чёткое: кадр растягивается до пикселей экрана фильтром Ланцоша (как скалер телевизора) — края резкие, без мыла и лесенки. Мягкое: обычное сглаживание браузера"><button data-v="1" class="on">чёткое</button><button data-v="0">мягкое</button></span></span>
 			<span class="seg" id="aspect"><button data-v="0" class="on" title="Экран 4:3, как на телевизоре">4:3</button><button data-v="1" title="Пиксели квадратные, 720×576">1:1</button></span>
@@ -133,7 +134,10 @@ const $ = (id) => document.getElementById(id);
 const canvas = $("video"), screen = $("screen");
 const gl = canvas.getContext("webgl2", { preserveDrawingBuffer: true, antialias: false, alpha: false });
 let mode = 3, view = 0, lines = 288, width = 720, crop = 1, nrOn = 1, cold = 1;
-const slot = [0, 0];			// which of the two textures of each parity holds the latest field
+// field textures: tex[0..5] raw fields, 3 per parity (latest, 1 and 2 frames earlier) — tex[3*f + rawSlot[f]] is
+// the latest; tex[6..9] cleaned fields (3D comb), 2 per parity — tex[6 + 2*f + cleanSlot[f]] is the latest
+const rawSlot = [0, 0], cleanSlot = [0, 0], rawSeq = new Array(6).fill(-100), cleanFb = [];
+let comb3d = 0, combId = 0;
 let cur = 0, need = false;
 const fields = [null, null];		// last raw field (Uint8Array, UYVY) for top (0) and bottom (1)
 const seqs = [-1, -1];
@@ -161,26 +165,38 @@ vec3 nr(vec3 a, vec3 b) {
 	if (uNR == 0) return a;
 	return mix(a, b, 0.5 * (1.0 - smoothstep(10.0, 30.0, abs(a.x - b.x))));
 }
-// luma change over one frame: opposite field at the missing line, current field on the lines around it
-float motion(int f, int op, int x, int r, int ra, int rb) {
-	float d1 = abs(fetch(op, x, r).x - fetchT(op, true, x, r).x);
-	float d2 = 0.5 * (abs(fetch(f, x, ra).x - fetchT(f, true, x, ra).x) + abs(fetch(f, x, rb).x - fetchT(f, true, x, rb).x));
-	return max(d1, d2);
+float dY(int f, int x, int row) { return fetch(f, x, row).x - fetchT(f, true, x, row).x; }	// luma change over a frame
+// Motion at a missing line: the change over one frame of the opposite field at that line and of the current field
+// on the lines around it, as the MEAN SIGNED change over 5 pixels x 3 field lines (camera noise cancels out, a real
+// change does not), plus any single pixel changing far beyond the noise (30). Tuned on recorded fields: with a
+// per-pixel test the noise fired on a quarter of a still picture and made still edges shimmer.
+float motion(int f, int op, int x, int r, int ra) {
+	float sc = 0.0, sa = 0.0, sb = 0.0;
+	for (int dy = -1; dy <= 1; dy++)
+		for (int dx = -2; dx <= 2; dx++) sc += dY(op, x + dx, r + dy);
+	for (int dy = -1; dy <= 2; dy++) {	// current-field rows ra-1 .. ra+2: window of ra (above) and of ra+1 (below)
+		float row = 0.0;
+		for (int dx = -2; dx <= 2; dx++) row += dY(f, x + dx, ra + dy);
+		if (dy <= 1) sa += row;
+		if (dy >= 0) sb += row;
+	}
+	float m = max(abs(sc), 0.5 * (abs(sa) + abs(sb))) / 15.0;
+	float px = max(abs(dY(op, x, r)), 0.5 * (abs(dY(f, x, ra)) + abs(dY(f, x, ra + 1))));
+	return max(m, px - 30.0);
 }
 void main() {
 	int x = int(gl_FragCoord.x) + uX0, y = uH - 1 - int(gl_FragCoord.y) + uY0;
 	vec3 yuv;
 	if (uMode == 3) {
 		// motion adaptive (what a TV does): still parts woven from both fields, moving parts interpolated.
-		// Thresholds tuned on recorded fields: 14 = above camera noise, x2 = quick fade to interpolation.
+		// The clamp keeps the woven pixel where nothing moves (de = 0) and lets interpolation in as motion grows.
 		int f = uCur, op = 1 - f, r = y >> 1;
 		if ((y & 1) == f) yuv = nr(fetch(f, x, r), fetchT(f, true, x, r));
 		else {
 			int ra = f == 0 ? r : r - 1, rb = ra + 1;	// current-field lines above and below
 			vec3 sp = 0.5 * (fetch(f, x, ra) + fetch(f, x, rb));
 			vec3 wv = nr(fetch(op, x, r), fetchT(op, true, x, r));
-			float d = max(motion(f, op, x - 1, r, ra, rb), max(motion(f, op, x, r, ra, rb), motion(f, op, x + 1, r, ra, rb)));
-			float de = max(d - 14.0, 0.0) * 2.0;
+			float de = max(motion(f, op, x, r, ra) - 4.0, 0.0) * 4.0;
 			yuv = clamp(sp, wv - de, wv + de);
 		}
 	} else if (uMode == 1) {
@@ -218,6 +234,43 @@ void main() {
 	}
 	o = vec4(clamp(rgb, 0.0, 1.0), 1.0);
 }`;
+// field cleaning, once per arriving field: 3D comb. With the decoder's line comb off the luma carries full detail
+// plus the PAL colour subcarrier as fine dots (4.43 MHz = 0.33 cycle/pixel). The subcarrier is inverted two frames
+// later (4 fields, same parity), so the mean of field n and n-4 has no dots and keeps all detail where nothing
+// moved; where it moved, a 3-pixel mean (zero response at 1/3 cycle/pixel) removes the dots instead.
+// Motion = signed mean of the change of the 3-pixel-smoothed luma over 9 px x 3 lines, or one change > 20
+// (tuned on recorded fields: 3.5 % of a still picture falls back, a pan does not ghost).
+const FS_CLEAN = `#version 300 es
+precision highp float; precision highp int;
+uniform sampler2D uRaw, uOld;	// raw field n, and the same-parity field two frames earlier
+uniform int uComb;		// 0 copy, 1 3D comb, 2 3-pixel mean only (no valid history)
+out vec4 o;
+float L(int w, int x, int row) {
+	ivec2 sz = textureSize(uRaw, 0);
+	x = clamp(x, 0, sz.x * 2 - 1); row = clamp(row, 0, sz.y - 1);
+	vec4 v = (w == 0 ? texelFetch(uRaw, ivec2(x >> 1, row), 0) : texelFetch(uOld, ivec2(x >> 1, row), 0)) * 255.0;
+	return (x & 1) == 1 ? v.a : v.g;
+}
+float B(int w, int x, int row) { return (L(w, x - 1, row) + L(w, x, row) + L(w, x + 1, row)) / 3.0; }
+float cleanY(int x, int row) {
+	float yn = L(0, x, row);
+	if (uComb == 0) return yn;
+	float bn = B(0, x, row);
+	if (uComb == 2) return bn;
+	float s = 0.0;		// sum over 3 lines of the 9-pixel window of 3-pixel means = weights 1,2,3,...,3,2,1
+	for (int dy = -1; dy <= 1; dy++)
+		for (int k = -5; k <= 5; k++) {
+			int a = k < 0 ? -k : k;
+			s += float(a == 5 ? 1 : a == 4 ? 2 : 3) * (L(0, x + k, row + dy) - L(1, x + k, row + dy));
+		}
+	float m = max(abs(s) / 81.0, abs(bn - B(1, x, row)) - 20.0);
+	return mix(0.5 * (yn + L(1, x, row)), bn, smoothstep(3.0, 6.0, m));
+}
+void main() {
+	ivec2 c = ivec2(gl_FragCoord.xy);	// one texel = U Y0 V Y1; the colour comes from the decoder as it is
+	vec4 v = texelFetch(uRaw, c, 0);
+	o = vec4(v.r, cleanY(c.x * 2, c.y) / 255.0, v.b, cleanY(c.x * 2 + 1, c.y) / 255.0);
+}`;
 // pass 2/3: scale the picture to the screen pixels, separable Lanczos-3 (horizontal pass, then vertical)
 const FS_SCALE = `#version 300 es
 precision highp float; precision highp int;
@@ -253,7 +306,7 @@ void main() {
 	}
 	o = vec4(clamp(acc.rgb / ws, 0.0, 1.0), 1.0);
 }`;
-let prog, prog2, tex = [], loc = {}, loc2 = {}, sharp = 1, px11 = 0;
+let prog, prog2, progC, tex = [], loc = {}, loc2 = {}, locC = {}, sharp = 1, px11 = 0;
 const fb = [null, null], fbTex = [null, null], fbDim = [[0, 0], [0, 0]];	// 0: picture at source size, 1: after the horizontal pass
 let srcW = 702, srcH = 568, outRect = [0, 0, 1, 1];
 function sh(type, src) {
@@ -269,22 +322,26 @@ function link(fs) {
 	return p;
 }
 function initGL() {
-	prog = link(FS); prog2 = link(FS_SCALE);
+	prog = link(FS); prog2 = link(FS_SCALE); progC = link(FS_CLEAN);
 	gl.useProgram(prog);
 	for (const n of ["uTop", "uBot", "uTopP", "uBotP", "uMode", "uCur", "uView", "uLines", "uH", "uW", "uX0", "uY0", "uNR", "uCold"])
 		loc[n] = gl.getUniformLocation(prog, n);
-	for (let i = 0; i < 4; i++) {
+	for (let i = 0; i < 10; i++) {
 		tex[i] = gl.createTexture();
-		gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, tex[i]);
+		gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[i]);
 		for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	}
+	for (let i = 0; i < 4; i++) cleanFb[i] = gl.createFramebuffer();
 	gl.uniform1i(loc.uTop, 0); gl.uniform1i(loc.uBot, 1); gl.uniform1i(loc.uTopP, 2); gl.uniform1i(loc.uBotP, 3);
+	gl.useProgram(progC);
+	for (const n of ["uRaw", "uOld", "uComb"]) locC[n] = gl.getUniformLocation(progC, n);
+	gl.uniform1i(locC.uRaw, 4); gl.uniform1i(locC.uOld, 5);
 	gl.useProgram(prog2);
 	for (const n of ["uSrc", "uAxis", "uSharp", "uRect"]) loc2[n] = gl.getUniformLocation(prog2, n);
-	for (let i = 0; i < 2; i++) {		// render targets on texture units 4 and 5
+	for (let i = 0; i < 2; i++) {		// render targets on texture units 6 and 7
 		fbTex[i] = gl.createTexture();
-		gl.activeTexture(gl.TEXTURE4 + i); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
+		gl.activeTexture(gl.TEXTURE6 + i); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
 		for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		fb[i] = gl.createFramebuffer();
@@ -297,7 +354,7 @@ function initGL() {
 function fbSize(i, w, h) {
 	if (fbDim[i][0] === w && fbDim[i][1] === h) return;
 	fbDim[i] = [w, h];
-	gl.activeTexture(gl.TEXTURE4 + i); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
+	gl.activeTexture(gl.TEXTURE6 + i); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 	gl.bindFramebuffer(gl.FRAMEBUFFER, fb[i]);
 	gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fbTex[i], 0);
@@ -321,17 +378,38 @@ function layout() {
 	need = true;
 }
 function allocTex() {
-	for (let i = 0; i < 4; i++) {
+	const black = new Uint8Array(width * 2 * lines);
+	for (let i = 0; i < black.length; i += 2) { black[i] = 128; black[i + 1] = 16; }
+	for (let i = 0; i < 10; i++) {
 		gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[i]);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width / 2, lines, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(width * 2 * lines).fill(16));
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width / 2, lines, 0, gl.RGBA, gl.UNSIGNED_BYTE, black);
 	}
+	for (let i = 0; i < 4; i++) {
+		gl.bindFramebuffer(gl.FRAMEBUFFER, cleanFb[i]);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex[6 + i], 0);
+	}
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	rawSeq.fill(-100);
 	layout();
+}
+// a new field of parity f arrived (raw texture already updated): write its cleaned copy
+function cleanField(f) {
+	cleanSlot[f] ^= 1;
+	const raw = 3 * f + rawSlot[f], old = 3 * f + (rawSlot[f] + 1) % 3;
+	const m = !comb3d ? 0 : rawSeq[raw] - rawSeq[old] === 4 ? 1 : 2;	// history broken (skipped fields): no 3D
+	gl.useProgram(progC);
+	gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, tex[raw]);
+	gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, tex[old]);
+	gl.uniform1i(locC.uComb, m);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, cleanFb[2 * f + cleanSlot[f]]); gl.viewport(0, 0, width / 2, lines);
+	gl.drawArrays(gl.TRIANGLES, 0, 3);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 function draw() {
 	// pass 1: deinterlace + colour into a texture at the source size
 	gl.useProgram(prog);
 	// units: 0 latest top, 1 latest bottom, 2 previous top, 3 previous bottom
-	for (const [u, t] of [[0, slot[0]], [1, 2 + slot[1]], [2, slot[0] ^ 1], [3, 2 + (slot[1] ^ 1)]]) {
+	for (const [u, t] of [[0, 6 + cleanSlot[0]], [1, 8 + cleanSlot[1]], [2, 6 + (cleanSlot[0] ^ 1)], [3, 8 + (cleanSlot[1] ^ 1)]]) {
 		gl.activeTexture(gl.TEXTURE0 + u); gl.bindTexture(gl.TEXTURE_2D, tex[t]);
 	}
 	gl.uniform1i(loc.uMode, mode); gl.uniform1i(loc.uCur, cur); gl.uniform1i(loc.uView, view);
@@ -342,12 +420,12 @@ function draw() {
 	// pass 2 + 3: scale to the screen pixels
 	gl.useProgram(prog2); gl.uniform1i(loc2.uSharp, sharp);
 	const [x0, y0, w, h] = outRect;
-	let src = 4;
+	let src = 6;
 	if (sharp) {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, fb[1]); gl.viewport(0, 0, w, srcH);
-		gl.uniform1i(loc2.uSrc, 4); gl.uniform1i(loc2.uAxis, 0); gl.uniform4f(loc2.uRect, 0, 0, w, srcH);
+		gl.uniform1i(loc2.uSrc, 6); gl.uniform1i(loc2.uAxis, 0); gl.uniform4f(loc2.uRect, 0, 0, w, srcH);
 		gl.drawArrays(gl.TRIANGLES, 0, 3);
-		src = 5;
+		src = 7;
 	}
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	gl.viewport(0, 0, canvas.width, canvas.height); gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
@@ -367,9 +445,12 @@ function onField(buf) {
 	if (w !== width || n !== lines) { width = w; lines = n; allocTex(); }
 	const f = (flags & 1) ? 0 : 1;			// 0 = top field
 	const data = new Uint8Array(buf, 16, w * 2 * n);
-	slot[f] ^= 1;				// the older texture of this parity gets the new field
-	gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[2 * f + slot[f]]);
+	rawSlot[f] = (rawSlot[f] + 1) % 3;	// the oldest raw texture of this parity gets the new field
+	const ri = 3 * f + rawSlot[f];
+	gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[ri]);
 	gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, w / 2, n, gl.RGBA, gl.UNSIGNED_BYTE, data);
+	rawSeq[ri] = seq;
+	cleanField(f);
 	fields[f] = data; seqs[f] = seq; cur = f; need = true; rx++;
 	if (!noSignal) $("overlay").classList.add("hidden");
 	$("badge").classList.toggle("hidden", !!(flags & 2));
@@ -443,6 +524,12 @@ function sendCtrl(id, v) {
 	sendTimer = setTimeout(() => { for (const k in pending) ws && ws.readyState === 1 && ws.send(`ctrl ${k} ${pending[k]}`); pending = {}; sendTimer = null; }, 60);
 }
 function onCtrls(list) {
+	const cb = list.find((c) => c.name === "3D Comb");
+	if (cb) {
+		comb3d = cb.val; combId = cb.id;
+		for (const b of $("comb").children) b.classList.toggle("on", +b.dataset.v === cb.val);
+	}
+	list = list.filter((c) => c.name !== "3D Comb");
 	ctrlList = list;
 	const box = $("ctrls");
 	if (document.activeElement && box.contains(document.activeElement) && document.activeElement.type === "range") {
@@ -503,15 +590,35 @@ function seg(id, set) {
 		const b = e.target.closest("button"); if (!b) return;
 		for (const x of el.children) x.classList.toggle("on", x === b);
 		set(+b.dataset.v); need = true;
+		savePrefs();
 	});
+}
+// the viewer's display choices are remembered in this browser (the 3D comb lives in the decoder, not here)
+const PREF = "sprutm.view", PREF_SEGS = ["mode", "view", "nr", "crop", "scale", "aspect"];
+function savePrefs() {
+	try {
+		const p = { cold: $("cold").value };
+		for (const id of PREF_SEGS) { const b = $(id).querySelector("button.on"); if (b) p[id] = b.dataset.v; }
+		localStorage.setItem(PREF, JSON.stringify(p));
+	} catch (e) { /* storage blocked: defaults next time */ }
+}
+function loadPrefs() {
+	let p = {};
+	try { p = JSON.parse(localStorage.getItem(PREF) || "{}") || {}; } catch (e) { return; }
+	for (const id of PREF_SEGS) {
+		const b = p[id] !== undefined && $(id).querySelector(`button[data-v="${p[id]}"]`);
+		if (b) b.click();
+	}
+	if (p.cold !== undefined) { $("cold").value = p.cold; $("cold").oninput(); }
 }
 seg("mode", (v) => mode = v);
 seg("view", (v) => { view = v; $("coldbox").classList.toggle("hidden", v !== 3); });
-$("cold").oninput = () => { cold = $("cold").value / 100; $("coldv").textContent = $("cold").value + " %"; need = true; };
+$("cold").oninput = () => { cold = $("cold").value / 100; $("coldv").textContent = $("cold").value + " %"; need = true; savePrefs(); };
 $("cold").ondblclick = () => { $("cold").value = 100; $("cold").oninput(); };
 seg("nr", (v) => nrOn = v);
 seg("crop", (v) => { crop = v; layout(); });
 seg("scale", (v) => sharp = v);
+seg("comb", (v) => { if (combId) sendCtrl(combId, v); });
 seg("aspect", (v) => { px11 = v; screen.classList.toggle("px11", v === 1); layout(); });
 function stamp() { const d = new Date(), p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
 function save(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
@@ -541,6 +648,7 @@ if (!gl) {
 	$("overlay").textContent = "Браузер не поддерживает WebGL2 — откройте страницу в свежем Chrome, Edge или Firefox";
 } else {
 	initGL();
+	loadPrefs();
 	requestAnimationFrame(frame);
 	connect();
 }

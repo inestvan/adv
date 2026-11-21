@@ -101,6 +101,7 @@ static struct {
 	char video[64], subdev[64], uvc[64], www[200];
 	int sub_fd;			/* decoder subdevice, kept open for the web page controls */
 	int peaking;			/* --peaking: luma peaking gain (reg 0xFB) set at start, -1 = leave as is */
+	int comb3d;			/* --comb3d: decoder line comb off at start, for the web page's 3D comb */
 	/* geometry */
 	unsigned fw, fh, fbpl;		/* field from unicam */
 	unsigned W, H;			/* frame to the host */
@@ -910,13 +911,31 @@ static void clamp_check(void)
 }
 
 /* Decoder settings the kernel driver does not offer as V4L2 controls; written straight to the main register map.
- * Luma peaking (UG-637 "DNR and luma peaking filter"): boosts luma around 3 MHz, i.e. sharpens edges;
- * 0x40 = 0 dB (off, the chip default), higher = sharper, lower = softer. */
+ * mask 0: a plain 0..255 register. mask != 0: an on/off switch, on = (reg & mask) == on, off = those bits 0.
+ * Luma Peaking (UG-637 "DNR and luma peaking filter"): boosts luma around 3 MHz, i.e. sharpens edges;
+ *   0x40 = 0 dB (off, the chip default), higher = sharper, lower = softer.
+ * 3D Comb: PAL luma comb mode YCMP (reg 0x39 bits 2:0) 100 = no line comb, the luma keeps its full detail plus
+ *   the colour subcarrier as a fine dot pattern; the web page removes the dots with a 3D comb (fields two frames
+ *   apart, where the PAL subcarrier is inverted) and keeps the detail. Off = 000, the chip's adaptive line comb,
+ *   which also blurs fine strokes such as small text. The USB webcam gets no 3D comb: it shows the dots. */
 static const struct {
 	uint32_t id;
 	const char *name;
-	uint8_t reg, def;
-} reg_ctls[] = { { 0x7ad000fbu, "Luma Peaking", 0xfb, 0x40 } };
+	uint8_t reg, def, mask, on;
+} reg_ctls[] = { { 0x7ad000fbu, "Luma Peaking", 0xfb, 0x40, 0, 0 }, { 0x7ad00039u, "3D Comb", 0x39, 0, 0x07, 0x04 } };
+
+static int reg_ctl_set(size_t i, int val)
+{
+	uint8_t v = 0;
+	if (reg_ctls[i].mask) {
+		if (rd_main(reg_ctls[i].reg, &v))
+			return -1;
+		v = (uint8_t)((v & ~reg_ctls[i].mask) | (val ? reg_ctls[i].on : 0));
+	} else {
+		v = (uint8_t)(val < 0 ? 0 : val > 255 ? 255 : val);
+	}
+	return wr_main(reg_ctls[i].reg, v);
+}
 
 /* the decoder's V4L2 controls (brightness, contrast, ..., test pattern) as JSON, to one viewer or all */
 static void web_send_ctrls(struct web_client *to)
@@ -965,7 +984,11 @@ static void web_send_ctrls(struct web_client *to)
 			continue;
 		sb_add(&b, "%s{\"id\":%u,\"name\":", first ? "" : ",", reg_ctls[i].id);
 		sb_str(&b, reg_ctls[i].name);
-		sb_add(&b, ",\"type\":1,\"min\":0,\"max\":255,\"step\":1,\"def\":%d,\"val\":%d}", reg_ctls[i].def, v);
+		if (reg_ctls[i].mask)
+			sb_add(&b, ",\"type\":2,\"min\":0,\"max\":1,\"step\":1,\"def\":%d,\"val\":%d}", reg_ctls[i].def,
+			       (v & reg_ctls[i].mask) == reg_ctls[i].on);
+		else
+			sb_add(&b, ",\"type\":1,\"min\":0,\"max\":255,\"step\":1,\"def\":%d,\"val\":%d}", reg_ctls[i].def, v);
 		first = 0;
 	}
 	sb_add(&b, "]}");
@@ -991,11 +1014,10 @@ static void web_command(struct web_client *c, char *msg)
 	if (sscanf(msg, "ctrl %u %d", &id, &val) == 2) {
 		for (size_t i = 0; i < sizeof reg_ctls / sizeof reg_ctls[0]; i++)
 			if (reg_ctls[i].id == id) {
-				val = val < 0 ? 0 : val > 255 ? 255 : val;
-				if (wr_main(reg_ctls[i].reg, (uint8_t)val))
+				if (reg_ctl_set(i, val))
 					logm("warning: web: register 0x%02x: write failed", reg_ctls[i].reg);
 				else if (g.verbose)
-					logm("web: %s (reg 0x%02x) = 0x%02x", reg_ctls[i].name, reg_ctls[i].reg, val);
+					logm("web: %s (reg 0x%02x) = %d", reg_ctls[i].name, reg_ctls[i].reg, val);
 				web_send_ctrls(NULL);
 				return;
 			}
@@ -1060,6 +1082,8 @@ static void usage(void)
 	     "  --www DIR          directory with index.html (default /usr/local/share/sprutm)\n"
 	     "  --peaking N        decoder luma peaking (sharpness) 0..255, reg 0xFB: 64 = off (chip default),\n"
 	     "                     higher = sharper edges (the web page has a slider to find the value)\n"
+	     "  --comb3d           decoder luma line comb off at start: the web page's 3D comb keeps fine detail\n"
+	     "                     (small text) sharp; the USB webcam then shows the colour subcarrier as fine dots\n"
 	     "  -v                 verbose (twice: log every USB request)");
 }
 
@@ -1072,7 +1096,7 @@ int main(int argc, char **argv)
 		{ "i2c-addr", required_argument, 0, 'a' }, { "video", required_argument, 0, 'V' },
 		{ "subdev", required_argument, 0, 'S' }, { "uvc", required_argument, 0, 'U' },
 		{ "web-port", required_argument, 0, 'P' }, { "www", required_argument, 0, 'W' },
-		{ "peaking", required_argument, 0, 'K' },
+		{ "peaking", required_argument, 0, 'K' }, { "comb3d", no_argument, 0, 'C' },
 		{ "help", no_argument, 0, 'h' }, { 0, 0, 0, 0 } };
 	int o;
 	while ((o = getopt_long(argc, argv, "vh", opts, NULL)) != -1) {
@@ -1104,6 +1128,7 @@ int main(int argc, char **argv)
 		case 'P': g.web_port = atoi(optarg); break;
 		case 'W': snprintf(g.www, sizeof g.www, "%s", optarg); break;
 		case 'K': g.peaking = (int)strtol(optarg, NULL, 0) & 255; break;
+		case 'C': g.comb3d = 1; break;
 		case 'v': g.verbose++; break;
 		default:
 			usage();
@@ -1138,6 +1163,8 @@ int main(int argc, char **argv)
 	clamp_check();
 	if (g.peaking >= 0 && wr_main(0xfb, (uint8_t)g.peaking) == 0)
 		logm("decoder luma peaking (sharpness) = %d (64 = off)", g.peaking);
+	if (g.comb3d && reg_ctl_set(1, 1) == 0)
+		logm("decoder luma line comb off (web page 3D comb)");
 	logm("running: %s -> %s, fields %ux%u (bpl %u), frames %ux%u %s, parity %s%s%s", g.video,
 	     g.uvc_fd >= 0 ? g.uvc : "(no USB)", g.fw, g.fh, g.fbpl, g.W, g.H, g.nv12 ? "NV12" : "YUY2",
 	     g.fixed_phase >= 0 ? "fixed" : "over I2C", g.invert ? ", inverted" : "", g.swap ? ", swapped" : "");
