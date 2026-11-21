@@ -112,6 +112,47 @@ static void test_pipeline(int ntsc, uint32_t seq0, int field1_first_seq_parity)
 	free(orig); free(out); free(fld[0]); free(fld[1]);
 }
 
+/* NV12: luma bit-exact, chroma = average of two lines of the same field, chroma rows interleaved by field */
+static void test_nv12(int ntsc)
+{
+	const unsigned W = 720, H = ntsc ? 480 : 576, FH = H / 2, BPL = W * 2 + 32;
+	uint8_t *orig = malloc((size_t)W * H * 2), *out = malloc((size_t)W * H * 3 / 2);
+	uint8_t *fld[2] = { malloc((size_t)BPL * FH), malloc((size_t)BPL * FH) };	/* [0] top rows, [1] bottom rows */
+	srand(77 + (unsigned)ntsc);
+	for (size_t i = 0; i < (size_t)W * H * 2; i++)
+		orig[i] = (uint8_t)rand();
+	for (int p = 0; p < 2; p++)
+		for (unsigned i = 0; i < FH; i++) {
+			const uint8_t *src = orig + (size_t)(2 * i + p) * W * 2;
+			uint8_t *dst = fld[p] + (size_t)i * BPL;
+			for (unsigned j = 0; j < W * 2; j += 4) {
+				dst[j] = src[j + 1];
+				dst[j + 1] = src[j];
+				dst[j + 2] = src[j + 3];
+				dst[j + 3] = src[j + 2];
+			}
+		}
+	fill_black_nv12(out, W, H);
+	weave_field_nv12(out, W, H, fld[1], W, FH, BPL, 0);	/* order of the two calls does not matter */
+	weave_field_nv12(out, W, H, fld[0], W, FH, BPL, 1);
+	size_t bady = 0, baduv = 0;
+	for (unsigned r = 0; r < H; r++)
+		for (unsigned x = 0; x < W; x++)
+			bady += out[(size_t)r * W + x] != orig[((size_t)r * W + x) * 2];
+	const uint8_t *uv = out + (size_t)W * H;
+	for (unsigned c = 0; c < H / 2; c++) {
+		unsigned p = c & 1, j = c >> 1, r0 = 4 * j + p, r1 = 4 * j + 2 + p;	/* frame rows of field lines 2j, 2j+1 */
+		for (unsigned k = 0; k < W / 2; k++) {
+			unsigned u = (orig[((size_t)r0 * W + 2 * k) * 2 + 1] + orig[((size_t)r1 * W + 2 * k) * 2 + 1] + 1) >> 1;
+			unsigned v = (orig[((size_t)r0 * W + 2 * k) * 2 + 3] + orig[((size_t)r1 * W + 2 * k) * 2 + 3] + 1) >> 1;
+			baduv += (uv[(size_t)c * W + 2 * k] != u) + (uv[(size_t)c * W + 2 * k + 1] != v);
+		}
+	}
+	CHECK(bady == 0, "%s NV12: %zu luma samples differ", ntsc ? "NTSC" : "PAL", bady);
+	CHECK(baduv == 0, "%s NV12: %zu chroma samples differ", ntsc ? "NTSC" : "PAL", baduv);
+	free(orig); free(out); free(fld[0]); free(fld[1]);
+}
+
 static void test_short_field(void)
 {
 	/* NTSC fields (240 lines) into a PAL frame: rows past 480 stay black */
@@ -134,6 +175,8 @@ int main(void)
 			for (int p = 0; p < 2; p++)
 				test_pipeline(ntsc, s0 + 1000 * (uint32_t)p, p);
 	test_short_field();
+	test_nv12(0);
+	test_nv12(1);
 	printf(fails ? "%d FAILED\n" : "all weave tests passed\n", fails);
 	return fails != 0;
 }

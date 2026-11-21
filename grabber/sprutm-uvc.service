@@ -1,13 +1,13 @@
 [Unit]
-Description=SPRUT-M grabber: ADV7280-M fields -> lossless YUY2 frames -> USB UVC
+Description=SPRUT-M grabber: ADV7280-M fields -> USB UVC webcam + web page (port 80)
 Requires=sprutm-gadget.service
 After=sprutm-gadget.service
 
 [Service]
-Environment=STD=pal EXTRA_ARGS=
+Environment=STD=pal FORMAT=nv12 WEB_PORT=80 EXTRA_ARGS=
 EnvironmentFile=-/etc/default/sprutm-grabber
 ExecStartPre=/sbin/modprobe i2c-dev
-ExecStart=/usr/local/bin/sprutm-uvc --std ${STD} $EXTRA_ARGS
+ExecStart=/usr/local/bin/sprutm-uvc --std ${STD} --format ${FORMAT} --web-port ${WEB_PORT} $EXTRA_ARGS
 Restart=always
 RestartSec=2
 

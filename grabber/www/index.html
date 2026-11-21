@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPRUT-M видео</title>
+<style>
+:root {
+	--bg: #101214; --panel: #181b1f; --line: #2a2f35; --text: #e6e8eb; --muted: #8b939c;
+	--accent: #4fa3ff; --ok: #3ecf8e; --warn: #f0b429; --bad: #ff5c5c;
+	color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, "Segoe UI", sans-serif; }
+header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--line); }
+header h1 { font-size: 15px; margin: 0; font-weight: 600; letter-spacing: .02em; }
+header .conn { margin-left: auto; display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--bad); }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; padding: 16px; }
+@media (max-width: 980px) { main { grid-template-columns: minmax(0, 1fr); } }
+.stage { min-width: 0; }
+.screen { position: relative; width: 100%; max-width: calc((100vh - 150px) * 4 / 3); aspect-ratio: 4 / 3; margin: 0 auto;
+	background: #000; border: 1px solid var(--line); }
+.screen.px11 { aspect-ratio: 720 / 576; max-width: calc((100vh - 150px) * 1.25); }
+.screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.screen:fullscreen { max-width: none; border: 0; aspect-ratio: auto; }
+.screen:fullscreen canvas { object-fit: contain; }
+.overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center;
+	color: var(--muted); font-size: 16px; pointer-events: none; padding: 16px; }
+.overlay.hidden { display: none; }
+.badge { position: absolute; left: 8px; top: 8px; padding: 2px 8px; border-radius: 4px; background: rgba(0,0,0,.6);
+	font-size: 12px; color: var(--warn); }
+.badge.hidden { display: none; }
+.cold { display: inline-flex; align-items: center; gap: 6px; }
+.cold.hidden { display: none; }
+.cold input { width: 110px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: center; margin-top: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; border-right: 1px solid var(--line); border-radius: 0; }
+.seg button:last-child { border-right: 0; }
+button, select { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+	padding: 6px 10px; font: inherit; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+.seg button.on { background: var(--accent); color: #fff; }
+.label { color: var(--muted); font-size: 12px; margin-right: 4px; }
+aside { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+section h2 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+td { padding: 2px 0; vertical-align: top; }
+td:first-child { color: var(--muted); padding-right: 8px; white-space: nowrap; }
+td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+#hist { width: 100%; height: 120px; display: block; background: #0b0c0e; border-radius: 4px; }
+.hstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.hstats div { background: #0b0c0e; border-radius: 4px; padding: 4px 6px; }
+.hstats b { display: block; font-size: 15px; font-weight: 600; }
+.ctrl { margin-bottom: 10px; }
+.ctrl .top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 2px; }
+.ctrl .top span:last-child { font-variant-numeric: tabular-nums; color: var(--muted); }
+.ctrl input[type=range] { width: 100%; }
+.ctrl select { width: 100%; }
+.note { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+.raw { color: var(--muted); font: 11px ui-monospace, Consolas, monospace; margin-top: 6px; }
+</style>
+</head>
+<body>
+<header>
+	<h1>SPRUT-M · CVBS → ADV7280-M</h1>
+	<div class="conn"><span class="dot" id="cdot"></span><span id="ctext">подключение…</span></div>
+</header>
+<main>
+	<div class="stage">
+		<div class="screen" id="screen">
+			<canvas id="video" width="720" height="576"></canvas>
+			<div class="overlay" id="overlay">Подключение к Pi…</div>
+			<div class="badge hidden" id="badge"></div>
+		</div>
+		<div class="toolbar">
+			<span><span class="label">Деинтерлейс</span><span class="seg" id="mode">
+				<button data-v="3" class="on" title="Как в телевизоре: где картинка стоит — оба поля склеены (полная чёткость, ничего не прыгает), где движение — строки интерполируются. 50 к/с">Авто 50</button><button data-v="0" title="Каждое поле отдельным кадром, 50 к/с, пропущенные строки интерполируются всегда (мелкие детали и зерно прыгают на полстроки)">Bob 50</button><button data-v="1" title="Два поля склеены построчно, 25 к/с, как есть (гребёнка на движении)">Weave 25</button><button data-v="2" title="Каждое поле, строки просто удвоены">Поле ×2</button>
+			</span></span>
+			<span><span class="label">Показ</span><span class="seg" id="view">
+				<button data-v="0" class="on">Цвет</button><button data-v="1">Яркость</button><button data-v="2" title="Синий: ниже чёрного (Y ≤ 16), красный: выше белого (Y ≥ 235)">Клиппинг</button><button data-v="3" title="Как на AV-мониторе: тени глубже (гамма 1,1) и цвета холоднее — подобрано по фото монитора. Меняет только показ (и PNG — снимок экрана); RAW кадр без изменений. Резкость как у монитора — ползунок «Резкость» ≈ 245">Как ТВ</button>
+			</span></span>
+			<span class="cold hidden" id="coldbox" title="Насколько холоднее цвета в режиме «Как ТВ»: 100 % — как намерено по фото монитора, 0 — без сдвига. Двойной щелчок — 100 %"><span class="label">Холод</span><input type="range" id="cold" min="0" max="200" value="100"><span id="coldv">100 %</span></span>
+			<span><span class="label">Шумодав</span><span class="seg" id="nr" title="Усреднение с предыдущим кадром там, где картинка не меняется (как 3D NR в телевизоре); только в режиме «Авто 50»"><button data-v="1" class="on">вкл</button><button data-v="0">выкл</button></span></span>
+			<span><span class="label">Края</span><span class="seg" id="crop" title="Обрезать края гашения: по 9 точек слева и справа (активная ширина PAL 702), по 4 строки сверху и снизу (там полстроки и мигающая тёмная строка). Телевизор обрезает края всегда (overscan)"><button data-v="1" class="on">обрезать</button><button data-v="0">весь кадр</button></span></span>
+			<span><span class="label">Растяжение</span><span class="seg" id="scale" title="Чёткое: кадр растягивается до пикселей экрана фильтром Ланцоша (как скалер телевизора) — края резкие, без мыла и лесенки. Мягкое: обычное сглаживание браузера"><button data-v="1" class="on">чёткое</button><button data-v="0">мягкое</button></span></span>
+			<span class="seg" id="aspect"><button data-v="0" class="on" title="Экран 4:3, как на телевизоре">4:3</button><button data-v="1" title="Пиксели квадратные, 720×576">1:1</button></span>
+			<button id="png" title="Снимок картинки без растяжения (PNG 702×568 с обрезкой краёв, 720×576 без), с выбранным показом">PNG</button>
+			<button id="rawbtn" title="Два последних поля, склеенные, без обработки: 720×576 UYVY (.yuv)">RAW кадр</button>
+			<button id="fs" title="Во весь экран (клавиша F)">⛶</button>
+		</div>
+	</div>
+	<aside>
+		<section>
+			<h2>Сигнал</h2>
+			<table id="status"><tbody>
+				<tr><td>Видеосигнал</td><td id="s-lock">—</td></tr>
+				<tr><td>Захват (IN_LOCK)</td><td id="s-inlock">—</td></tr>
+				<tr><td>Стандарт</td><td id="s-std">—</td></tr>
+				<tr><td>Цвет (поднесущая)</td><td id="s-fsc">—</td></tr>
+				<tr><td>АРУ по пиковому белому</td><td id="s-pw">—</td></tr>
+				<tr><td>Поля в браузере</td><td id="s-fps">—</td></tr>
+				<tr><td>Пропуск (сеть)</td><td id="s-skip">—</td></tr>
+				<tr><td>Чётность полей</td><td id="s-phase">—</td></tr>
+				<tr><td>USB-вебкамера</td><td id="s-usb">—</td></tr>
+			</tbody></table>
+			<div class="raw" id="s-raw"></div>
+		</section>
+		<section>
+			<h2>Яркость (Y), гистограмма</h2>
+			<canvas id="hist" width="512" height="120"></canvas>
+			<div class="hstats">
+				<div>мин<b id="h-min">—</b></div><div>1 %<b id="h-p1">—</b></div><div>медиана<b id="h-p50">—</b></div>
+				<div>99 %<b id="h-p99">—</b></div><div>макс<b id="h-max">—</b></div><div>≥ 235<b id="h-clip">—</b></div>
+			</div>
+			<p class="note">Норма для видео: чёрный 16, белый 235. Линии на графике отмечают эти уровни.</p>
+		</section>
+		<section>
+			<h2>Настройки декодера</h2>
+			<div id="ctrls"><p class="note">нет данных</p></div>
+			<button id="defaults" style="width:100%">Всё по умолчанию</button>
+			<p class="note">Настройки действуют сразу, но не сохраняются: после перезапуска Pi вернутся заводские.</p>
+		</section>
+	</aside>
+</main>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const canvas = $("video"), screen = $("screen");
+const gl = canvas.getContext("webgl2", { preserveDrawingBuffer: true, antialias: false, alpha: false });
+let mode = 3, view = 0, lines = 288, width = 720, crop = 1, nrOn = 1, cold = 1;
+const slot = [0, 0];			// which of the two textures of each parity holds the latest field
+let cur = 0, need = false;
+const fields = [null, null];		// last raw field (Uint8Array, UYVY) for top (0) and bottom (1)
+const seqs = [-1, -1];
+let rx = 0, lastStat = null, lastStatT = 0, skippedPrev = null, histTick = 0, noSignal = false;
+
+// ---------------------------------------------------------------- WebGL
+const VS = `#version 300 es
+void main() { vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.0 : -1.0); gl_Position = vec4(p, 0.0, 1.0); }`;
+const FS = `#version 300 es
+precision highp float; precision highp int;
+uniform sampler2D uTop, uBot, uTopP, uBotP;	// latest top/bottom field, and the one before each (P)
+uniform int uMode, uCur, uView, uLines, uH, uW, uX0, uY0, uNR;
+uniform float uCold;
+out vec4 o;
+vec3 fetchT(int f, bool prev, int x, int row) {
+	row = clamp(row, 0, uLines - 1); x = clamp(x, 0, uW - 1);
+	ivec2 c = ivec2(x >> 1, row);
+	vec4 t = (f == 0 ? (prev ? texelFetch(uTopP, c, 0) : texelFetch(uTop, c, 0))
+	                 : (prev ? texelFetch(uBotP, c, 0) : texelFetch(uBot, c, 0))) * 255.0;
+	return vec3((x & 1) == 1 ? t.a : t.g, t.r, t.b);	// U Y0 V Y1
+}
+vec3 fetch(int f, int x, int row) { return fetchT(f, false, x, row); }
+// temporal noise reduction: average with the same line one frame earlier where it did not change
+vec3 nr(vec3 a, vec3 b) {
+	if (uNR == 0) return a;
+	return mix(a, b, 0.5 * (1.0 - smoothstep(10.0, 30.0, abs(a.x - b.x))));
+}
+// luma change over one frame: opposite field at the missing line, current field on the lines around it
+float motion(int f, int op, int x, int r, int ra, int rb) {
+	float d1 = abs(fetch(op, x, r).x - fetchT(op, true, x, r).x);
+	float d2 = 0.5 * (abs(fetch(f, x, ra).x - fetchT(f, true, x, ra).x) + abs(fetch(f, x, rb).x - fetchT(f, true, x, rb).x));
+	return max(d1, d2);
+}
+void main() {
+	int x = int(gl_FragCoord.x) + uX0, y = uH - 1 - int(gl_FragCoord.y) + uY0;
+	vec3 yuv;
+	if (uMode == 3) {
+		// motion adaptive (what a TV does): still parts woven from both fields, moving parts interpolated.
+		// Thresholds tuned on recorded fields: 14 = above camera noise, x2 = quick fade to interpolation.
+		int f = uCur, op = 1 - f, r = y >> 1;
+		if ((y & 1) == f) yuv = nr(fetch(f, x, r), fetchT(f, true, x, r));
+		else {
+			int ra = f == 0 ? r : r - 1, rb = ra + 1;	// current-field lines above and below
+			vec3 sp = 0.5 * (fetch(f, x, ra) + fetch(f, x, rb));
+			vec3 wv = nr(fetch(op, x, r), fetchT(op, true, x, r));
+			float d = max(motion(f, op, x - 1, r, ra, rb), max(motion(f, op, x, r, ra, rb), motion(f, op, x + 1, r, ra, rb)));
+			float de = max(d - 14.0, 0.0) * 2.0;
+			yuv = clamp(sp, wv - de, wv + de);
+		}
+	} else if (uMode == 1) {
+		yuv = fetch(y & 1, x, y >> 1);
+	} else {
+		int f = uCur;
+		if ((y & 1) == f) yuv = fetch(f, x, y >> 1);
+		else {
+			int r0 = f == 0 ? (y >> 1) : (y >> 1) - 1;
+			yuv = uMode == 2 ? fetch(f, x, f == 0 ? r0 : r0 + 1) : 0.5 * (fetch(f, x, r0) + fetch(f, x, r0 + 1));
+		}
+	}
+	float Y = yuv.x, u = yuv.y - 128.0, v = yuv.z - 128.0;
+	vec3 rgb;
+	if (uView == 0 || uView == 3) {
+		float yc = (Y - 16.0) * 1.164383;
+		rgb = vec3(yc + 1.596027 * v, yc - 0.391762 * u - 0.812968 * v, yc + 2.017232 * u) / 255.0;
+		if (uView == 3) {	// AV monitor look, fitted from phone photos of the monitor next to the laptop:
+			rgb = pow(clamp(rgb, 0.0, 1.0), vec3(1.1)) * 255.0;	// deeper shadows
+			// colder colours: chroma matrix + offset (bluer, less red), scaled by the "Холод" slider
+			float yd = dot(rgb, vec3(0.299, 0.587, 0.114));
+			vec2 cc = vec2(0.564 * (rgb.b - yd), 0.713 * (rgb.r - yd));
+			mat2 m = mat2(1.0) + uCold * (mat2(1.192, -0.228, 0.131, 0.859) - mat2(1.0));
+			cc = m * cc + uCold * vec2(20.0, -13.1);
+			float r = yd + cc.y / 0.713, b = yd + cc.x / 0.564;
+			rgb = vec3(r, (yd - 0.299 * r - 0.114 * b) / 0.587, b) / 255.0;
+		}
+	} else {
+		float g = clamp((Y - 16.0) / 219.0, 0.0, 1.0);
+		rgb = vec3(g);
+		if (uView == 2) {
+			if (Y <= 16.5) rgb = vec3(0.1, 0.35, 1.0);
+			else if (Y >= 234.5) rgb = vec3(1.0, 0.15, 0.1);
+		}
+	}
+	o = vec4(clamp(rgb, 0.0, 1.0), 1.0);
+}`;
+// pass 2/3: scale the picture to the screen pixels, separable Lanczos-3 (horizontal pass, then vertical)
+const FS_SCALE = `#version 300 es
+precision highp float; precision highp int;
+uniform sampler2D uSrc;
+uniform int uAxis, uSharp;
+uniform vec4 uRect;		// where this pass draws, in pixels of its target: x, y, width, height
+out vec4 o;
+float lanczos3(float x) {
+	x = abs(x);
+	if (x < 1e-4) return 1.0;
+	if (x >= 3.0) return 0.0;
+	float p = 3.14159265 * x;
+	return 3.0 * sin(p) * sin(p / 3.0) / (p * p);
+}
+void main() {
+	vec2 q = gl_FragCoord.xy - uRect.xy;
+	if (uSharp == 0) { o = texture(uSrc, q / uRect.zw); return; }	// plain bilinear, as the browser does
+	ivec2 sz = textureSize(uSrc, 0);
+	bool hz = uAxis == 0;
+	float n = float(hz ? sz.x : sz.y), outN = hz ? uRect.z : uRect.w;
+	float s = (hz ? q.x : q.y) * n / outN - 0.5;	// position in source texels
+	float k = min(outN / n, 1.0);			// shrinking: widen the kernel, no aliasing
+	int other = int(hz ? q.y : q.x), lim = (hz ? sz.x : sz.y) - 1, c = int(floor(s));
+	vec4 acc = vec4(0.0);
+	float ws = 0.0;
+	for (int i = -8; i <= 9; i++) {
+		int j = c + i;
+		float w = lanczos3((s - float(j)) * k);
+		if (w == 0.0) continue;
+		int jj = clamp(j, 0, lim);
+		acc += w * texelFetch(uSrc, hz ? ivec2(jj, other) : ivec2(other, jj), 0);
+		ws += w;
+	}
+	o = vec4(clamp(acc.rgb / ws, 0.0, 1.0), 1.0);
+}`;
+let prog, prog2, tex = [], loc = {}, loc2 = {}, sharp = 1, px11 = 0;
+const fb = [null, null], fbTex = [null, null], fbDim = [[0, 0], [0, 0]];	// 0: picture at source size, 1: after the horizontal pass
+let srcW = 702, srcH = 568, outRect = [0, 0, 1, 1];
+function sh(type, src) {
+	const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+	if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+	return s;
+}
+function link(fs) {
+	const p = gl.createProgram();
+	gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
+	gl.linkProgram(p);
+	if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+	return p;
+}
+function initGL() {
+	prog = link(FS); prog2 = link(FS_SCALE);
+	gl.useProgram(prog);
+	for (const n of ["uTop", "uBot", "uTopP", "uBotP", "uMode", "uCur", "uView", "uLines", "uH", "uW", "uX0", "uY0", "uNR", "uCold"])
+		loc[n] = gl.getUniformLocation(prog, n);
+	for (let i = 0; i < 4; i++) {
+		tex[i] = gl.createTexture();
+		gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, tex[i]);
+		for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	}
+	gl.uniform1i(loc.uTop, 0); gl.uniform1i(loc.uBot, 1); gl.uniform1i(loc.uTopP, 2); gl.uniform1i(loc.uBotP, 3);
+	gl.useProgram(prog2);
+	for (const n of ["uSrc", "uAxis", "uSharp", "uRect"]) loc2[n] = gl.getUniformLocation(prog2, n);
+	for (let i = 0; i < 2; i++) {		// render targets on texture units 4 and 5
+		fbTex[i] = gl.createTexture();
+		gl.activeTexture(gl.TEXTURE4 + i); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
+		for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		fb[i] = gl.createFramebuffer();
+	}
+	gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+	allocTex();
+	new ResizeObserver(layout).observe(screen);
+	document.addEventListener("fullscreenchange", layout);
+}
+function fbSize(i, w, h) {
+	if (fbDim[i][0] === w && fbDim[i][1] === h) return;
+	fbDim[i] = [w, h];
+	gl.activeTexture(gl.TEXTURE4 + i); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, fb[i]);
+	gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fbTex[i], 0);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+const cropX = () => crop ? 9 : 0, cropY = () => crop ? 4 : 0;
+// picture shape on screen: 4:3 for the 702 active samples x 576 lines (BT.601), or square pixels
+const aspect = () => px11 ? srcW / srcH : (srcW / 702) * (576 / srcH) * 4 / 3;
+function layout() {
+	srcW = width - 2 * cropX(); srcH = lines * 2 - 2 * cropY();
+	fbSize(0, srcW, srcH);
+	screen.style.aspectRatio = document.fullscreenElement ? "" : String(aspect());
+	const dpr = window.devicePixelRatio || 1;
+	const cw = Math.max(1, Math.round(screen.clientWidth * dpr)), ch = Math.max(1, Math.round(screen.clientHeight * dpr));
+	if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; }
+	const a = aspect();
+	let w = cw, h = Math.round(cw / a);
+	if (h > ch) { h = ch; w = Math.round(ch * a); }
+	outRect = [(cw - w) >> 1, (ch - h) >> 1, w, h];
+	fbSize(1, w, srcH);
+	need = true;
+}
+function allocTex() {
+	for (let i = 0; i < 4; i++) {
+		gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[i]);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, width / 2, lines, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(width * 2 * lines).fill(16));
+	}
+	layout();
+}
+function draw() {
+	// pass 1: deinterlace + colour into a texture at the source size
+	gl.useProgram(prog);
+	// units: 0 latest top, 1 latest bottom, 2 previous top, 3 previous bottom
+	for (const [u, t] of [[0, slot[0]], [1, 2 + slot[1]], [2, slot[0] ^ 1], [3, 2 + (slot[1] ^ 1)]]) {
+		gl.activeTexture(gl.TEXTURE0 + u); gl.bindTexture(gl.TEXTURE_2D, tex[t]);
+	}
+	gl.uniform1i(loc.uMode, mode); gl.uniform1i(loc.uCur, cur); gl.uniform1i(loc.uView, view);
+	gl.uniform1i(loc.uLines, lines); gl.uniform1i(loc.uH, srcH); gl.uniform1i(loc.uW, width);
+	gl.uniform1i(loc.uX0, cropX()); gl.uniform1i(loc.uY0, cropY()); gl.uniform1i(loc.uNR, nrOn); gl.uniform1f(loc.uCold, cold);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, fb[0]); gl.viewport(0, 0, srcW, srcH);
+	gl.drawArrays(gl.TRIANGLES, 0, 3);
+	// pass 2 + 3: scale to the screen pixels
+	gl.useProgram(prog2); gl.uniform1i(loc2.uSharp, sharp);
+	const [x0, y0, w, h] = outRect;
+	let src = 4;
+	if (sharp) {
+		gl.bindFramebuffer(gl.FRAMEBUFFER, fb[1]); gl.viewport(0, 0, w, srcH);
+		gl.uniform1i(loc2.uSrc, 4); gl.uniform1i(loc2.uAxis, 0); gl.uniform4f(loc2.uRect, 0, 0, w, srcH);
+		gl.drawArrays(gl.TRIANGLES, 0, 3);
+		src = 5;
+	}
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	gl.viewport(0, 0, canvas.width, canvas.height); gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+	gl.viewport(x0, y0, w, h);
+	gl.uniform1i(loc2.uSrc, src); gl.uniform1i(loc2.uAxis, 1); gl.uniform4f(loc2.uRect, x0, y0, w, h);
+	gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function frame() {
+	if (need) { draw(); need = false; }
+	requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- fields
+function onField(buf) {
+	const h = new DataView(buf);
+	const flags = h.getUint8(1), w = h.getUint16(2, true), n = h.getUint16(4, true), seq = h.getUint32(8, true);
+	if (w !== width || n !== lines) { width = w; lines = n; allocTex(); }
+	const f = (flags & 1) ? 0 : 1;			// 0 = top field
+	const data = new Uint8Array(buf, 16, w * 2 * n);
+	slot[f] ^= 1;				// the older texture of this parity gets the new field
+	gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[2 * f + slot[f]]);
+	gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, w / 2, n, gl.RGBA, gl.UNSIGNED_BYTE, data);
+	fields[f] = data; seqs[f] = seq; cur = f; need = true; rx++;
+	if (!noSignal) $("overlay").classList.add("hidden");
+	$("badge").classList.toggle("hidden", !!(flags & 2));
+	$("badge").textContent = "чётность полей определяется…";
+	if (++histTick % 5 === 0) histogram(data);
+}
+
+// ---------------------------------------------------------------- histogram
+const hc = $("hist").getContext("2d");
+function histogram(d) {
+	const b = new Uint32Array(256);
+	for (let i = 1; i < d.length; i += 2) b[d[i]]++;
+	const total = d.length / 2;
+	const pct = (p) => { let s = 0; for (let i = 0; i < 256; i++) { s += b[i]; if (s >= total * p) return i; } return 255; };
+	let mn = 0; while (mn < 255 && !b[mn]) mn++;
+	let mx = 255; while (mx > 0 && !b[mx]) mx--;
+	let clip = 0; for (let i = 235; i < 256; i++) clip += b[i];
+	$("h-min").textContent = mn; $("h-p1").textContent = pct(0.01); $("h-p50").textContent = pct(0.5);
+	$("h-p99").textContent = pct(0.99); $("h-max").textContent = mx; $("h-clip").textContent = (100 * clip / total).toFixed(1) + " %";
+	const W = hc.canvas.width, H = hc.canvas.height;
+	hc.clearRect(0, 0, W, H);
+	let peak = 1; for (let i = 0; i < 256; i++) peak = Math.max(peak, Math.sqrt(b[i]));
+	hc.fillStyle = "#4fa3ff";
+	for (let i = 0; i < 256; i++) { const v = Math.sqrt(b[i]) / peak * (H - 14); hc.fillRect(i * 2, H - v, 2, v); }
+	hc.fillStyle = "#8b939c"; hc.font = "10px system-ui";
+	for (const [lv, name] of [[16, "16"], [235, "235"]]) { hc.fillRect(lv * 2, 0, 1, H); hc.fillText(name, lv * 2 + 3, 10); }
+}
+
+// ---------------------------------------------------------------- status
+const STD = ["NTSC M/J", "NTSC 4.43", "PAL M", "PAL 60", "PAL B/G/H/I/D", "SECAM", "PAL Comb. N", "SECAM 525"];
+function setCell(id, text, cls) { const e = $(id); e.textContent = text; e.className = cls || ""; }
+function onStat(s) {
+	const t = performance.now();
+	if (lastStatT) {
+		const dt = (t - lastStatT) / 1000;
+		setCell("s-fps", (rx / dt).toFixed(1) + " /с", rx / dt > 45 ? "ok" : "warn");
+		if (skippedPrev !== null) {
+			const sk = (s.skipped - skippedPrev) / dt;
+			setCell("s-skip", sk < 0.5 ? "нет" : sk.toFixed(0) + " /с" + (sk > 5 ? " — медленная сеть" : ""), sk < 0.5 ? "ok" : "warn");
+		}
+	}
+	rx = 0; lastStatT = t; skippedPrev = s.skipped; lastStat = s;
+	if (s.st1 !== undefined) {
+		const tp = ctrlList.find((c) => c.name === "Test Pattern"), pattern = tp && tp.val !== tp.max;
+		const freeRun = (s.st3 & 0x10) && !pattern, lock = s.st1 & 1;	// Status 3 FREE_RUN_ACT, Status 1 IN_LOCK / LOST_LOCK
+		setCell("s-lock", pattern ? "тестовая картинка декодера" : freeRun ? "нет (свободный ход)" : (s.st3 & 1) ? "есть" : "есть, строки не захвачены", freeRun ? "bad" : (s.st3 & 1) ? "ok" : "warn");
+		setCell("s-inlock", lock ? ((s.st1 & 2) ? "да, были срывы" : "да") : ((s.st1 & 2) ? "нет, срывается" : "нет"), lock && !(s.st1 & 2) ? "ok" : "warn");
+		setCell("s-std", STD[(s.st1 >> 4) & 7] + ((s.st3 & 4) ? ", 50 Гц" : ", 60 Гц") + ((s.st3 & 0x40) ? ", чересстр." : ""));
+		setCell("s-fsc", (s.st1 & 4) ? "захвачен" : "нет", (s.st1 & 4) ? "ok" : "warn");
+		setCell("s-pw", (s.st1 & 8) ? "ограничивает" : "нет", (s.st1 & 8) ? "warn" : "");
+		$("s-raw").textContent = "Status 1/2/3: " + [s.st1, s.st2, s.st3].map((v) => "0x" + v.toString(16).padStart(2, "0").toUpperCase()).join(" ");
+		const ov = $("overlay");
+		noSignal = !!freeRun;
+		if (freeRun) { ov.textContent = "Нет видеосигнала на входе"; ov.classList.remove("hidden"); }
+		else ov.classList.add("hidden");
+	} else {
+		$("overlay").classList.add("hidden");
+	}
+	setCell("s-phase", s.phase >= 0 ? "определена" : "ищется", s.phase >= 0 ? "ok" : "warn");
+	setCell("s-usb", s.usb ? "идёт поток" : "не используется");
+}
+
+// ---------------------------------------------------------------- decoder controls
+const RU = { "Brightness": "Яркость", "Contrast": "Контраст", "Saturation": "Насыщенность", "Hue": "Оттенок",
+	"Fast Switching": "Быстрое переключение входов", "Test Pattern": "Тестовая картинка",
+	"Luma Peaking": "Резкость (контуры; 64 — выкл.)" };
+let ctrlList = [], sendTimer = null, pending = {};
+function sendCtrl(id, v) {
+	pending[id] = v;
+	if (sendTimer) return;
+	sendTimer = setTimeout(() => { for (const k in pending) ws && ws.readyState === 1 && ws.send(`ctrl ${k} ${pending[k]}`); pending = {}; sendTimer = null; }, 60);
+}
+function onCtrls(list) {
+	ctrlList = list;
+	const box = $("ctrls");
+	if (document.activeElement && box.contains(document.activeElement) && document.activeElement.type === "range") {
+		for (const c of list) { const e = box.querySelector(`[data-id="${c.id}"] .val`); if (e) e.textContent = c.val; }
+		return;
+	}
+	box.innerHTML = "";
+	if (!list.length) { box.innerHTML = '<p class="note">декодер не отдал настроек</p>'; return; }
+	for (const c of list) {
+		const d = document.createElement("div"); d.className = "ctrl"; d.dataset.id = c.id;
+		const name = RU[c.name] ? `${RU[c.name]}` : c.name;
+		if (c.type === 3) {
+			d.innerHTML = `<div class="top"><span>${name}</span></div>`;
+			const s = document.createElement("select");
+			c.menu.forEach((m, i) => { const o = document.createElement("option"); o.value = c.min + i; o.textContent = m || String(c.min + i); s.appendChild(o); });
+			s.value = c.val; s.onchange = () => sendCtrl(c.id, s.value);
+			d.appendChild(s);
+		} else if (c.type === 2) {
+			d.innerHTML = `<label class="top"><span>${name}</span><input type="checkbox" ${c.val ? "checked" : ""}></label>`;
+			d.querySelector("input").onchange = (e) => sendCtrl(c.id, e.target.checked ? 1 : 0);
+		} else {
+			d.innerHTML = `<div class="top"><span>${name}</span><span><span class="val">${c.val}</span> (по умолч. ${c.def})</span></div>`;
+			const r = document.createElement("input");
+			Object.assign(r, { type: "range", min: c.min, max: c.max, step: c.step || 1, value: c.val });
+			r.oninput = () => { d.querySelector(".val").textContent = r.value; sendCtrl(c.id, r.value); };
+			r.ondblclick = () => { r.value = c.def; r.oninput(); };
+			d.appendChild(r);
+		}
+		box.appendChild(d);
+	}
+}
+$("defaults").onclick = () => { for (const c of ctrlList) if (c.val !== c.def) sendCtrl(c.id, c.def); };
+
+// ---------------------------------------------------------------- connection
+let ws = null;
+function setConn(state, text) { $("cdot").className = "dot " + state; $("ctext").textContent = text; }
+function connect() {
+	ws = new WebSocket(`ws://${location.host}/ws`);
+	ws.binaryType = "arraybuffer";
+	ws.onopen = () => { setConn("ok", "подключено"); $("overlay").textContent = "Жду видео…"; };
+	ws.onmessage = (e) => {
+		if (typeof e.data !== "string") { onField(e.data); return; }
+		const m = JSON.parse(e.data);
+		if (m.type === "stat") onStat(m); else if (m.type === "ctrls") onCtrls(m.list);
+	};
+	ws.onclose = () => {
+		setConn("", "нет связи, переподключаюсь…");
+		const ov = $("overlay"); ov.textContent = "Нет связи с Pi…"; ov.classList.remove("hidden");
+		lastStatT = 0; skippedPrev = null;
+		setTimeout(connect, 1000);
+	};
+}
+
+// ---------------------------------------------------------------- toolbar
+function seg(id, set) {
+	const el = $(id);
+	el.addEventListener("click", (e) => {
+		const b = e.target.closest("button"); if (!b) return;
+		for (const x of el.children) x.classList.toggle("on", x === b);
+		set(+b.dataset.v); need = true;
+	});
+}
+seg("mode", (v) => mode = v);
+seg("view", (v) => { view = v; $("coldbox").classList.toggle("hidden", v !== 3); });
+$("cold").oninput = () => { cold = $("cold").value / 100; $("coldv").textContent = $("cold").value + " %"; need = true; };
+$("cold").ondblclick = () => { $("cold").value = 100; $("cold").oninput(); };
+seg("nr", (v) => nrOn = v);
+seg("crop", (v) => { crop = v; layout(); });
+seg("scale", (v) => sharp = v);
+seg("aspect", (v) => { px11 = v; screen.classList.toggle("px11", v === 1); layout(); });
+function stamp() { const d = new Date(), p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+function save(blob, name) { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+$("png").onclick = () => {		// the picture before scaling, at the source size
+	draw();
+	const px = new Uint8Array(srcW * srcH * 4), row = srcW * 4;
+	gl.bindFramebuffer(gl.FRAMEBUFFER, fb[0]); gl.readPixels(0, 0, srcW, srcH, gl.RGBA, gl.UNSIGNED_BYTE, px);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	const c2 = document.createElement("canvas"); c2.width = srcW; c2.height = srcH;
+	const ctx = c2.getContext("2d"), img = ctx.createImageData(srcW, srcH);
+	for (let y = 0; y < srcH; y++) img.data.set(px.subarray((srcH - 1 - y) * row, (srcH - y) * row), y * row);
+	ctx.putImageData(img, 0, 0);
+	c2.toBlob((b) => save(b, `sprutm_${stamp()}.png`), "image/png");
+};
+$("rawbtn").onclick = () => {
+	if (!fields[0] || !fields[1]) return;
+	const row = width * 2, out = new Uint8Array(row * lines * 2);
+	for (let y = 0; y < lines * 2; y++) out.set(fields[y & 1].subarray((y >> 1) * row, ((y >> 1) + 1) * row), y * row);
+	save(new Blob([out]), `sprutm_${width}x${lines * 2}_uyvy_${stamp()}.yuv`);
+};
+function fullscreen() { document.fullscreenElement ? document.exitFullscreen() : screen.requestFullscreen(); }
+$("fs").onclick = fullscreen;
+screen.ondblclick = fullscreen;
+document.addEventListener("keydown", (e) => { if (e.key === "f" || e.key === "F" || e.key === "а" || e.key === "А") fullscreen(); });
+
+if (!gl) {
+	$("overlay").textContent = "Браузер не поддерживает WebGL2 — откройте страницу в свежем Chrome, Edge или Firefox";
+} else {
+	initGL();
+	requestAnimationFrame(frame);
+	connect();
+}
+</script>
+</body>
+</html>

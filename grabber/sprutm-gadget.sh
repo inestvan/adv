@@ -1,11 +1,12 @@
 #!/bin/sh
 # USB UVC gadget for the SPRUT-M grabber (Raspberry Pi 4, USB-C port in device mode via dwc2).
-# One uncompressed YUY2 format, one frame size: 720x576 @ 25 (PAL) or 720x480 @ 29.97 (NTSC).
-# Usage: sprutm-gadget.sh [start|stop]     Standard: STD=pal|ntsc (default from /etc/default/sprutm-grabber)
+# One uncompressed format (NV12 by default, or YUY2), one frame size: 720x576 @ 25 (PAL) or 720x480 @ 29.97 (NTSC).
+# Usage: sprutm-gadget.sh [start|stop]     STD=pal|ntsc, FORMAT=nv12|yuyv (from /etc/default/sprutm-grabber)
 set -e
 
 [ -f /etc/default/sprutm-grabber ] && . /etc/default/sprutm-grabber
 STD=${STD:-pal}
+FORMAT=${FORMAT:-nv12}
 CFS=/sys/kernel/config
 G=$CFS/usb_gadget/sprutm
 F=$G/functions/uvc.0
@@ -38,8 +39,9 @@ start() {
 	else
 		W=720; H=576; IVAL=400000
 	fi
-	BUF=$((W * H * 2))
-	RATE=$((W * H * 16 * 10000000 / IVAL))	# bits per second
+	if [ "$FORMAT" = yuyv ]; then BPP=16; else BPP=12; fi
+	BUF=$((W * H * BPP / 8))
+	RATE=$((W * H * BPP * 10000000 / IVAL))	# bits per second
 
 	mkdir -p "$G"
 	echo 0x1d6b > "$G/idVendor"		# Linux Foundation
@@ -67,9 +69,14 @@ start() {
 	ln -s "$F/control/header/h" "$F/control/class/fs/h"
 	ln -s "$F/control/header/h" "$F/control/class/ss/h"
 
-	# streaming: uncompressed YUY2 (the default guidFormat of an uncompressed format), one frame
+	# streaming: one uncompressed format, one frame. The default guidFormat is YUY2; NV12 = GUID 3231564E-0000-0010-
+	# 8000-00AA00389B71, written as 16 raw bytes (octal escapes: dash printf has no \x)
 	U="$F/streaming/uncompressed/u"
 	mkdir -p "$U/${H}p"
+	if [ "$FORMAT" != yuyv ]; then
+		printf '\116\126\061\062\000\000\020\000\200\000\000\252\000\070\233\161' > "$U/guidFormat"
+		echo 12 > "$U/bBitsPerPixel"
+	fi
 	echo $W > "$U/${H}p/wWidth"
 	echo $H > "$U/${H}p/wHeight"
 	echo $BUF > "$U/${H}p/dwMaxVideoFrameBufferSize"
@@ -83,8 +90,9 @@ start() {
 	ln -s "$F/streaming/header/h" "$F/streaming/class/hs/h"
 	ln -s "$F/streaming/header/h" "$F/streaming/class/ss/h"
 
-	# 720x576x2x25 = 20.7 MB/s: high-bandwidth isochronous, 3 x 1024 bytes every 125 us (24.5 MB/s)
-	echo 3072 > "$F/streaming_maxpacket"
+	# high-bandwidth isochronous, 2 x 1024 bytes every 125 us = 16.4 MB/s: the most the Pi 4 dwc2 can do (its TX
+	# FIFOs are at most 512 words; 3072 fails with "No suitable fifo found"). NV12 720x576 @ 25 = 15.6 MB/s.
+	echo 2048 > "$F/streaming_maxpacket"
 	echo 1 > "$F/streaming_interval"
 
 	ln -s "$F" "$G/configs/c.1/uvc.0"
@@ -94,7 +102,7 @@ start() {
 		exit 1
 	fi
 	echo "$UDC" > "$G/UDC"
-	echo "UVC gadget up on $UDC: ${W}x${H} YUY2, interval $IVAL x100 ns"
+	echo "UVC gadget up on $UDC: ${W}x${H} $FORMAT, interval $IVAL x100 ns"
 }
 
 case "${1:-start}" in

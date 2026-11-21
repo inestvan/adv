@@ -2,6 +2,11 @@
 # Input standard: pal (720x576 @ 25) or ntsc (720x480 @ 29.97). After a change:
 #   sudo systemctl restart sprutm-gadget sprutm-uvc     (and re-plug the USB cable)
 STD=pal
+# Frame format to the laptop: nv12 (luma bit-exact, fits the Pi 4 USB-C) or yuyv (does NOT fit, 20.7 MB/s)
+FORMAT=nv12
+# Web page: http://169.254.10.1/ over a LAN cable (every field bit-exact), http://adv.local/ over Wi-Fi
+# (as many fields as it carries). 0 = off
+WEB_PORT=80
 # Extra options of sprutm-uvc, e.g. "--swap" (lines swapped), "--invert-phase" (motion jerks back and forth),
 # "-v" (statistics in the journal every 5 s)
 EXTRA_ARGS=

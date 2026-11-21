@@ -1,9 +1,10 @@
-/* sprutm-uvc: SPRUT-M (ADV7280-M over CSI-2) -> Raspberry Pi 4 -> USB UVC webcam, uncompressed and lossless.
+/* sprutm-uvc: SPRUT-M (ADV7280-M over CSI-2) -> Raspberry Pi 4 -> USB UVC webcam and a web page, uncompressed.
  *
  * The decoder runs in interlaced mode: one 720 x 288 (PAL) / 720 x 240 (NTSC) field per CSI-2 frame, 50/60 fields
- * per second. Two fields of one frame are woven line by line into 720 x 576 / 720 x 480 YUY2 and handed to the
- * UVC gadget (f_uvc, configured by sprutm-gadget.sh). No scaling, no filtering, no compression: the only change
- * is the byte order UYVY -> YUYV. Deinterlacing is left to the host (OBS "Yadif 2x" etc.).
+ * per second. Two fields of one frame are woven line by line into 720 x 576 / 720 x 480 and handed to the UVC
+ * gadget (f_uvc, configured by sprutm-gadget.sh). No scaling, no compression. Default NV12: luma bit-exact, chroma
+ * averaged over two lines of the same field (weave.h). YUY2 (every sample unchanged) needs 20.7 MB/s, but the
+ * Pi 4 dwc2 gadget sends at most 2048 bytes per microframe = 16.3 MB/s. Deinterlacing is left to the host.
  *
  * Why the field parity is read over I2C: unicam (the Pi CSI-2 receiver) does not report TOP/BOTTOM, it only
  * counts frames (v4l2_buffer.sequence) and timestamps them at Frame Start. The decoder reports the field it is
@@ -12,6 +13,10 @@
  *
  * Why Media Controller mode: in legacy mode unicam never asks the sensor for an interlaced format and the adv7180
  * driver then switches the chip to its I2P deinterlacer. Here the subdevice is set to field ALTERNATE directly.
+ *
+ * Web page (web.h, at the same time as USB): http://<pi>/ shows every field bit-exact (YUY2-equivalent, 20.7 MB/s),
+ * deinterlaced in the browser, with a luma histogram, the decoder status and its controls. Over a LAN cable all
+ * 50 fields arrive; over Wi-Fi the page shows as many as the link carries.
  *
  * Build: gcc -O2 -Wall -o sprutm-uvc sprutm-uvc.c       Usage: sprutm-uvc --help
  */
@@ -73,10 +78,11 @@ struct uvc_event {
 #endif
 
 #include "weave.h"
+#include "web.h"
 
 #define CAP_BUFS	6
 #define OUT_BUFS	4
-#define MAX_PAYLOAD	3072	/* = streaming_maxpacket in sprutm-gadget.sh (HS, 3 x 1024 per microframe) */
+#define MAX_PAYLOAD	2048	/* = streaming_maxpacket in sprutm-gadget.sh: the Pi 4 dwc2 FIFOs hold at most 2048 bytes */
 #define ADV_REG_CTRL	0x0e	/* register map select (adv7180.c: ADV7180_REG_CTRL) */
 #define ADV_MAP_IRQ	0x20	/* interrupt/VDP sub-map (ADV7180_CTRL_IRQ_SPACE) */
 #define ADV_RAW_STATUS2	0x45	/* UG-637: Raw Status 2, bit 4 EVEN_FIELD */
@@ -91,11 +97,14 @@ enum out_state { OUT_FREE, OUT_FILLING, OUT_QUEUED };
 
 static struct {
 	/* options */
-	int ntsc, swap, invert, fixed_phase, verbose, i2c_bus, i2c_addr;
-	char video[64], subdev[64], uvc[64];
+	int ntsc, swap, invert, fixed_phase, verbose, i2c_bus, i2c_addr, nv12, web_port;
+	char video[64], subdev[64], uvc[64], www[200];
+	int sub_fd;			/* decoder subdevice, kept open for the web page controls */
+	int peaking;			/* --peaking: luma peaking gain (reg 0xFB) set at start, -1 = leave as is */
 	/* geometry */
 	unsigned fw, fh, fbpl;		/* field from unicam */
 	unsigned W, H;			/* frame to the host */
+	size_t fsize;			/* bytes per frame to the host */
 	uint32_t interval;		/* 100 ns units */
 	int64_t field_ns;
 	/* devices */
@@ -121,7 +130,8 @@ static struct {
 	int nvc;
 	/* stats */
 	unsigned long n_fields, n_frames, n_drop, n_nobuf;
-} g = { .fixed_phase = -1, .i2c_bus = 10, .i2c_addr = 0x21, .cap_fd = -1, .uvc_fd = -1, .i2c_fd = -1, .cur = -1 };
+} g = { .nv12 = 1, .web_port = 80, .peaking = -1, .www = "/usr/local/share/sprutm", .fixed_phase = -1, .i2c_bus = 10,
+	.i2c_addr = 0x21, .cap_fd = -1, .uvc_fd = -1, .i2c_fd = -1, .sub_fd = -1, .cur = -1 };
 
 static volatile sig_atomic_t quit;
 
@@ -194,7 +204,7 @@ static int find_subdev(char *out, size_t outlen)
 			name[0] = 0;
 		fclose(f);
 		if (strstr(name, "adv7180") || strstr(name, "adv728")) {
-			snprintf(out, outlen, "/dev/%s", e->d_name);
+			snprintf(out, outlen, "/dev/%.50s", e->d_name);
 			found = 0;
 			break;
 		}
@@ -397,7 +407,7 @@ static void fill_streaming_control(struct uvc_streaming_control *c)
 	c->bFormatIndex = 1;
 	c->bFrameIndex = 1;
 	c->dwFrameInterval = htole32(g.interval);
-	c->dwMaxVideoFrameSize = htole32(g.W * g.H * 2);
+	c->dwMaxVideoFrameSize = htole32((uint32_t)g.fsize);
 	c->dwMaxPayloadTransferSize = htole32(MAX_PAYLOAD);
 	c->bmFramingInfo = 3;
 	c->bPreferedVersion = 1;
@@ -431,12 +441,21 @@ static void start_streaming(void)
 	f.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 	f.fmt.pix.width = g.W;
 	f.fmt.pix.height = g.H;
-	f.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+	f.fmt.pix.pixelformat = g.nv12 ? V4L2_PIX_FMT_NV12 : V4L2_PIX_FMT_YUYV;
 	f.fmt.pix.field = V4L2_FIELD_NONE;
-	f.fmt.pix.bytesperline = g.W * 2;
-	f.fmt.pix.sizeimage = g.W * g.H * 2;
+	f.fmt.pix.bytesperline = g.nv12 ? g.W : g.W * 2;
+	f.fmt.pix.sizeimage = (uint32_t)g.fsize;
 	if (xioctl(g.uvc_fd, VIDIOC_S_FMT, &f) < 0)
 		logm("warning: uvc S_FMT: %s", strerror(errno));
+	/* f_uvc spreads every frame evenly over (frame interval / 125 us) requests, and its interval defaults to
+	 * 666666 (15 fps) unless set here: without this a 25 fps stream is sent at 15 fps. */
+	struct v4l2_streamparm sp;
+	memset(&sp, 0, sizeof sp);
+	sp.type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+	sp.parm.output.timeperframe.numerator = g.ntsc ? 1001 : 1;
+	sp.parm.output.timeperframe.denominator = g.ntsc ? 30000 : 25;
+	if (xioctl(g.uvc_fd, VIDIOC_S_PARM, &sp) < 0)
+		logm("warning: uvc S_PARM: %s", strerror(errno));
 
 	struct v4l2_requestbuffers rb = { .count = OUT_BUFS, .type = V4L2_BUF_TYPE_VIDEO_OUTPUT,
 					  .memory = V4L2_MEMORY_MMAP };
@@ -470,7 +489,7 @@ static void start_streaming(void)
 	int type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
 	if (xioctl(g.uvc_fd, VIDIOC_STREAMON, &type) < 0)	/* also completes the delayed USB status stage */
 		logm("error: uvc STREAMON: %s", strerror(errno));
-	logm("host started streaming %ux%u YUY2 @ %s", g.W, g.H, g.ntsc ? "29.97" : "25");
+	logm("host started streaming %ux%u %s @ %s", g.W, g.H, g.nv12 ? "NV12" : "YUY2", g.ntsc ? "29.97" : "25");
 }
 
 static void reclaim_out(void)
@@ -673,11 +692,19 @@ static void handle_uvc_event(void)
 static void open_uvc(void)
 {
 	if (!g.uvc[0] && find_video("g_uvc", V4L2_CAP_VIDEO_OUTPUT, g.uvc, sizeof g.uvc)) {
+		if (web.listen_fd >= 0) {
+			logm("warning: no UVC gadget node - USB webcam off, web page only");
+			return;
+		}
 		logm("error: no UVC gadget node - run sprutm-gadget.sh first (dtoverlay=dwc2,dr_mode=peripheral)");
 		exit(1);
 	}
 	g.uvc_fd = open(g.uvc, O_RDWR | O_NONBLOCK);
 	if (g.uvc_fd < 0) {
+		if (web.listen_fd >= 0) {
+			logm("warning: %s: %s - USB webcam off, web page only", g.uvc, strerror(errno));
+			return;
+		}
 		logm("error: %s: %s", g.uvc, strerror(errno));
 		exit(1);
 	}
@@ -696,9 +723,22 @@ static void open_uvc(void)
 
 /* ------------------------------------------------------------------ fields -> frames */
 
+static void weave(uint8_t *frame, const uint8_t *field, int top)
+{
+	if (g.nv12)
+		weave_field_nv12(frame, g.W, g.H, field, g.fw, g.fh, g.fbpl, top);
+	else
+		weave_field(frame, g.W, g.H, field, g.fw, g.fh, g.fbpl, top);
+}
+
 static void field_done(uint32_t seq, const uint8_t *data)
 {
 	g.n_fields++;
+	if (web.listen_fd >= 0) {
+		int locked = g.lock.phase >= 0;
+		int wodd = field_is_odd(seq, (locked ? g.lock.phase : 0) ^ g.invert);
+		web_field(seq, data, g.fw, g.fh, g.fbpl, field_is_top(wodd, g.ntsc, g.swap), locked);
+	}
 	if (!g.streaming || g.lock.phase < 0)
 		return;
 	reclaim_out();
@@ -718,11 +758,15 @@ static void field_done(uint32_t seq, const uint8_t *data)
 				return;
 			}
 			g.out_st[g.cur] = OUT_FILLING;
-			if (g.fw < g.W || 2 * g.fh < g.H)
-				fill_black_yuyv(g.out[g.cur].p, (size_t)g.W * g.H * 2);
+			if (g.fw < g.W || 2 * g.fh < g.H) {
+				if (g.nv12)
+					fill_black_nv12(g.out[g.cur].p, g.W, g.H);
+				else
+					fill_black_yuyv(g.out[g.cur].p, g.fsize);
+			}
 		}
 		g.cur_seq = seq;
-		weave_field(g.out[g.cur].p, g.W, g.H, data, g.fw, g.fh, g.fbpl, top);
+		weave(g.out[g.cur].p, data, top);
 		return;
 	}
 	if (g.cur < 0)
@@ -733,9 +777,9 @@ static void field_done(uint32_t seq, const uint8_t *data)
 		g.cur = -1;
 		return;
 	}
-	weave_field(g.out[g.cur].p, g.W, g.H, data, g.fw, g.fh, g.fbpl, top);
+	weave(g.out[g.cur].p, data, top);
 	struct v4l2_buffer b = { .index = (uint32_t)g.cur, .type = V4L2_BUF_TYPE_VIDEO_OUTPUT,
-				 .memory = V4L2_MEMORY_MMAP, .bytesused = g.W * g.H * 2 };
+				 .memory = V4L2_MEMORY_MMAP, .bytesused = (uint32_t)g.fsize };
 	if (xioctl(g.uvc_fd, VIDIOC_QBUF, &b) < 0) {
 		g.n_drop++;
 		g.out_st[g.cur] = OUT_FREE;
@@ -794,6 +838,202 @@ static void do_parity_sample(void)
 	}
 }
 
+/* ------------------------------------------------------------------ web page: status and controls */
+
+struct sbuf {
+	char *p;
+	size_t n, cap;
+};
+
+static void sb_add(struct sbuf *b, const char *fmt, ...)
+{
+	if (b->n >= b->cap)
+		return;
+	va_list ap;
+	va_start(ap, fmt);
+	int r = vsnprintf(b->p + b->n, b->cap - b->n, fmt, ap);
+	va_end(ap);
+	if (r > 0)
+		b->n = b->n + (size_t)r < b->cap ? b->n + (size_t)r : b->cap;
+}
+
+static void sb_str(struct sbuf *b, const char *s)	/* JSON string, printable ASCII only */
+{
+	char t[64];
+	size_t i = 0;
+	for (; *s && i < sizeof t - 1; s++)
+		t[i++] = (*s == '"' || *s == '\\' || (unsigned char)*s < 32 || (unsigned char)*s > 126) ? ' ' : *s;
+	t[i] = 0;
+	sb_add(b, "\"%s\"", t);
+}
+
+/* main register map; the kernel driver caches the map select, so it is restored */
+static int rd_main(uint8_t reg, uint8_t *v)
+{
+	uint8_t page;
+	if (g.i2c_fd < 0 || i2c_rd(ADV_REG_CTRL, &page))
+		return -1;
+	if (page)
+		i2c_wr(ADV_REG_CTRL, 0);
+	int r = i2c_rd(reg, v);
+	if (page)
+		i2c_wr(ADV_REG_CTRL, page);
+	return r;
+}
+
+static int wr_main(uint8_t reg, uint8_t v)
+{
+	uint8_t page;
+	if (g.i2c_fd < 0 || i2c_rd(ADV_REG_CTRL, &page))
+		return -1;
+	if (page)
+		i2c_wr(ADV_REG_CTRL, 0);
+	int r = i2c_wr(reg, v);
+	if (page)
+		i2c_wr(ADV_REG_CTRL, page);
+	return r;
+}
+
+/* Keep the decoder's analog input clamp on. The kernel adv7180 driver writes the test pattern number straight into
+ * register 0x14 (Analog Clamp Control) and so clears CCLEN, bit 4 (the current sources that hold the dc level of
+ * the ac-coupled input), already at start-up with "Disable". Without them the input floats: no IN_LOCK, the luma
+ * AGC wanders and black sits at Y 110-150 instead of 16 (washed-out picture). Checked once a second and after
+ * every control change from the web page. */
+static void clamp_check(void)
+{
+	static int told;
+	uint8_t v;
+	if (rd_main(0x14, &v) || (v & 0x10))
+		return;
+	if (wr_main(0x14, (uint8_t)(v | 0x10)) == 0 && !told++)
+		logm("decoder input clamp was off (reg 0x14 = 0x%02x, cleared by the kernel driver): turned on", v);
+}
+
+/* Decoder settings the kernel driver does not offer as V4L2 controls; written straight to the main register map.
+ * Luma peaking (UG-637 "DNR and luma peaking filter"): boosts luma around 3 MHz, i.e. sharpens edges;
+ * 0x40 = 0 dB (off, the chip default), higher = sharper, lower = softer. */
+static const struct {
+	uint32_t id;
+	const char *name;
+	uint8_t reg, def;
+} reg_ctls[] = { { 0x7ad000fbu, "Luma Peaking", 0xfb, 0x40 } };
+
+/* the decoder's V4L2 controls (brightness, contrast, ..., test pattern) as JSON, to one viewer or all */
+static void web_send_ctrls(struct web_client *to)
+{
+	char buf[6000];
+	struct sbuf b = { buf, 0, sizeof buf };
+	sb_add(&b, "{\"type\":\"ctrls\",\"list\":[");
+	int first = 1;
+	if (g.sub_fd >= 0) {
+		struct v4l2_queryctrl q;
+		memset(&q, 0, sizeof q);
+		q.id = V4L2_CTRL_FLAG_NEXT_CTRL;
+		while (xioctl(g.sub_fd, VIDIOC_QUERYCTRL, &q) == 0) {
+			if (!(q.flags & (V4L2_CTRL_FLAG_DISABLED | V4L2_CTRL_FLAG_READ_ONLY)) &&
+			    (q.type == V4L2_CTRL_TYPE_INTEGER || q.type == V4L2_CTRL_TYPE_BOOLEAN ||
+			     q.type == V4L2_CTRL_TYPE_MENU)) {
+				struct v4l2_control ct = { .id = q.id };
+				xioctl(g.sub_fd, VIDIOC_G_CTRL, &ct);
+				sb_add(&b, "%s{\"id\":%u,\"name\":", first ? "" : ",", q.id);
+				sb_str(&b, (const char *)q.name);
+				sb_add(&b, ",\"type\":%u,\"min\":%d,\"max\":%d,\"step\":%d,\"def\":%d,\"val\":%d", q.type,
+				       q.minimum, q.maximum, q.step, q.default_value, ct.value);
+				if (q.type == V4L2_CTRL_TYPE_MENU) {
+					sb_add(&b, ",\"menu\":[");
+					for (int i = q.minimum; i <= q.maximum && i < 32; i++) {
+						struct v4l2_querymenu m;
+						memset(&m, 0, sizeof m);
+						m.id = q.id;
+						m.index = (uint32_t)i;
+						if (i > q.minimum)
+							sb_add(&b, ",");
+						sb_str(&b, xioctl(g.sub_fd, VIDIOC_QUERYMENU, &m) == 0 ? (const char *)m.name : "");
+					}
+					sb_add(&b, "]");
+				}
+				sb_add(&b, "}");
+				first = 0;
+			}
+			q.id |= V4L2_CTRL_FLAG_NEXT_CTRL;
+		}
+	}
+	/* decoder registers the kernel driver has no control for (ids outside the V4L2 range) */
+	for (size_t i = 0; i < sizeof reg_ctls / sizeof reg_ctls[0]; i++) {
+		uint8_t v;
+		if (rd_main(reg_ctls[i].reg, &v))
+			continue;
+		sb_add(&b, "%s{\"id\":%u,\"name\":", first ? "" : ",", reg_ctls[i].id);
+		sb_str(&b, reg_ctls[i].name);
+		sb_add(&b, ",\"type\":1,\"min\":0,\"max\":255,\"step\":1,\"def\":%d,\"val\":%d}", reg_ctls[i].def, v);
+		first = 0;
+	}
+	sb_add(&b, "]}");
+	if (b.n >= b.cap)
+		return;
+	if (to)
+		web_text(to, buf);
+	else
+		web_text_all(buf);
+}
+
+static void web_opened(struct web_client *c)
+{
+	if (g.verbose)
+		logm("web: viewer connected (%d)", web_clients());
+	web_send_ctrls(c);
+}
+
+static void web_command(struct web_client *c, char *msg)
+{
+	unsigned id;
+	int val;
+	if (sscanf(msg, "ctrl %u %d", &id, &val) == 2) {
+		for (size_t i = 0; i < sizeof reg_ctls / sizeof reg_ctls[0]; i++)
+			if (reg_ctls[i].id == id) {
+				val = val < 0 ? 0 : val > 255 ? 255 : val;
+				if (wr_main(reg_ctls[i].reg, (uint8_t)val))
+					logm("warning: web: register 0x%02x: write failed", reg_ctls[i].reg);
+				else if (g.verbose)
+					logm("web: %s (reg 0x%02x) = 0x%02x", reg_ctls[i].name, reg_ctls[i].reg, val);
+				web_send_ctrls(NULL);
+				return;
+			}
+		if (g.sub_fd < 0)
+			return;
+		struct v4l2_control ct = { .id = id, .value = val };
+		if (xioctl(g.sub_fd, VIDIOC_S_CTRL, &ct) < 0)
+			logm("warning: web: control 0x%x = %d: %s", id, val, strerror(errno));
+		else if (g.verbose)
+			logm("web: control 0x%x = %d", id, val);
+		clamp_check();
+		web_send_ctrls(NULL);
+	} else if (!strncmp(msg, "ctrls", 5)) {
+		web_send_ctrls(c);
+	}
+}
+
+/* once a second: decoder status (Status 1/2/3, UG-637) and counters, to every viewer */
+static void web_status(void)
+{
+	uint8_t s1 = 0, s2 = 0, s3 = 0;
+	int ok = rd_main(0x10, &s1) == 0 && rd_main(0x12, &s2) == 0 && rd_main(0x13, &s3) == 0;
+	for (int i = 0; i < WEB_MAX_CLIENTS; i++) {
+		struct web_client *c = &web.c[i];
+		if (c->fd < 0 || !c->ws)
+			continue;
+		char buf[400];
+		struct sbuf b = { buf, 0, sizeof buf };
+		sb_add(&b, "{\"type\":\"stat\",\"std\":\"%s\",\"fields\":%lu,\"frames\":%lu,\"drop\":%lu,\"phase\":%d,"
+			   "\"usb\":%d,\"sent\":%lu,\"skipped\":%lu,\"viewers\":%d", g.ntsc ? "ntsc" : "pal", g.n_fields,
+		       g.n_frames, g.n_drop, g.lock.phase, g.streaming, c->fields_sent, c->fields_skipped, web_clients());
+		if (ok)
+			sb_add(&b, ",\"st1\":%u,\"st2\":%u,\"st3\":%u", s1, s2, s3);
+		sb_add(&b, "}");
+		web_text(c, buf);
+	}
+}
+
 /* ------------------------------------------------------------------ main */
 
 static void on_signal(int s)
@@ -804,8 +1044,10 @@ static void on_signal(int s)
 
 static void usage(void)
 {
-	puts("sprutm-uvc: SPRUT-M (ADV7280-M) fields -> lossless woven YUY2 frames -> USB UVC gadget\n"
+	puts("sprutm-uvc: SPRUT-M (ADV7280-M) fields -> woven uncompressed frames -> USB UVC gadget\n"
 	     "  --std pal|ntsc     input standard (default pal: 720x576 @ 25)\n"
+	     "  --format nv12|yuyv frame format, must match sprutm-gadget.sh (default nv12: luma bit-exact; YUY2\n"
+	     "                     needs 20.7 MB/s, more than the Pi 4 USB-C can send)\n"
 	     "  --swap             swap top/bottom lines (picture looks line-swapped / jagged)\n"
 	     "  --invert-phase     pair fields the other way round (still picture clean, motion jerks back and forth)\n"
 	     "  --phase 0|1        fixed field parity, do not read it over I2C (the right value changes on each start)\n"
@@ -814,17 +1056,23 @@ static void usage(void)
 	     "  --video DEV        unicam capture node (default: auto)\n"
 	     "  --subdev DEV       decoder subdevice (default: auto)\n"
 	     "  --uvc DEV          UVC gadget node (default: auto)\n"
+	     "  --web-port N       web page port (default 80, 0 = off)\n"
+	     "  --www DIR          directory with index.html (default /usr/local/share/sprutm)\n"
+	     "  --peaking N        decoder luma peaking (sharpness) 0..255, reg 0xFB: 64 = off (chip default),\n"
+	     "                     higher = sharper edges (the web page has a slider to find the value)\n"
 	     "  -v                 verbose (twice: log every USB request)");
 }
 
 int main(int argc, char **argv)
 {
 	static const struct option opts[] = {
-		{ "std", required_argument, 0, 's' }, { "swap", no_argument, 0, 'w' },
+		{ "std", required_argument, 0, 's' }, { "format", required_argument, 0, 'f' }, { "swap", no_argument, 0, 'w' },
 		{ "invert-phase", no_argument, 0, 'n' },
 		{ "phase", required_argument, 0, 'p' }, { "i2c-bus", required_argument, 0, 'b' },
 		{ "i2c-addr", required_argument, 0, 'a' }, { "video", required_argument, 0, 'V' },
 		{ "subdev", required_argument, 0, 'S' }, { "uvc", required_argument, 0, 'U' },
+		{ "web-port", required_argument, 0, 'P' }, { "www", required_argument, 0, 'W' },
+		{ "peaking", required_argument, 0, 'K' },
 		{ "help", no_argument, 0, 'h' }, { 0, 0, 0, 0 } };
 	int o;
 	while ((o = getopt_long(argc, argv, "vh", opts, NULL)) != -1) {
@@ -837,6 +1085,14 @@ int main(int argc, char **argv)
 				return 2;
 			}
 			break;
+		case 'f':
+			if (!strcasecmp(optarg, "yuyv") || !strcasecmp(optarg, "yuy2"))
+				g.nv12 = 0;
+			else if (strcasecmp(optarg, "nv12")) {
+				usage();
+				return 2;
+			}
+			break;
 		case 'w': g.swap = 1; break;
 		case 'n': g.invert = 1; break;
 		case 'p': g.fixed_phase = atoi(optarg) & 1; break;
@@ -845,6 +1101,9 @@ int main(int argc, char **argv)
 		case 'V': snprintf(g.video, sizeof g.video, "%s", optarg); break;
 		case 'S': snprintf(g.subdev, sizeof g.subdev, "%s", optarg); break;
 		case 'U': snprintf(g.uvc, sizeof g.uvc, "%s", optarg); break;
+		case 'P': g.web_port = atoi(optarg); break;
+		case 'W': snprintf(g.www, sizeof g.www, "%s", optarg); break;
+		case 'K': g.peaking = (int)strtol(optarg, NULL, 0) & 255; break;
 		case 'v': g.verbose++; break;
 		default:
 			usage();
@@ -854,6 +1113,7 @@ int main(int argc, char **argv)
 	g.W = 720;
 	g.H = g.ntsc ? 480 : 576;
 	g.interval = g.ntsc ? 333667 : 400000;
+	g.fsize = g.nv12 ? (size_t)g.W * g.H * 3 / 2 : (size_t)g.W * g.H * 2;
 	g.field_ns = g.ntsc ? 16683333 : 20000000;
 	phase_lock_init(&g.lock, g.fixed_phase);
 
@@ -865,23 +1125,38 @@ int main(int argc, char **argv)
 
 	setup_decoder();
 	open_i2c();
+	if (g.web_port > 0) {
+		if (web_init(g.web_port, g.www) < 0)
+			logm("warning: web page off: port %d: %s", g.web_port, strerror(errno));
+		web.on_open = web_opened;
+		web.on_text = web_command;
+		if (g.subdev[0])
+			g.sub_fd = open(g.subdev, O_RDWR);
+	}
 	open_uvc();
 	start_capture();
-	logm("running: %s -> %s, fields %ux%u (bpl %u), frames %ux%u YUY2, parity %s%s%s", g.video, g.uvc, g.fw,
-	     g.fh, g.fbpl, g.W, g.H, g.fixed_phase >= 0 ? "fixed" : "over I2C", g.invert ? ", inverted" : "",
-	     g.swap ? ", swapped" : "");
+	clamp_check();
+	if (g.peaking >= 0 && wr_main(0xfb, (uint8_t)g.peaking) == 0)
+		logm("decoder luma peaking (sharpness) = %d (64 = off)", g.peaking);
+	logm("running: %s -> %s, fields %ux%u (bpl %u), frames %ux%u %s, parity %s%s%s", g.video,
+	     g.uvc_fd >= 0 ? g.uvc : "(no USB)", g.fw, g.fh, g.fbpl, g.W, g.H, g.nv12 ? "NV12" : "YUY2",
+	     g.fixed_phase >= 0 ? "fixed" : "over I2C", g.invert ? ", inverted" : "", g.swap ? ", swapped" : "");
+	if (web.listen_fd >= 0)
+		logm("web page: http://<this Pi>:%d/  (%s/index.html)", g.web_port, g.www);
 
-	int64_t last_stat = now_ns();
+	int64_t last_stat = now_ns(), last_web = last_stat;
 	int lock_warned = 0;
 	while (!quit) {
-		struct pollfd p[2] = { { .fd = g.cap_fd, .events = POLLIN },
-				       { .fd = g.uvc_fd, .events = POLLPRI | (g.out_queued > 0 ? POLLOUT : 0) } };
+		struct pollfd p[2 + WEB_MAX_CLIENTS + 1] = {
+			{ .fd = g.cap_fd, .events = POLLIN },
+			{ .fd = g.uvc_fd, .events = POLLPRI | (g.out_queued > 0 ? POLLOUT : 0) } };
+		int np = 2 + web_pollfds(p + 2);
 		int timeout = 200;
 		if (g.sample_pending) {
 			int64_t dt = g.sample_due - now_ns();
 			timeout = dt <= 0 ? 0 : (int)((dt + 999999) / 1000000);
 		}
-		int r = poll(p, 2, timeout);
+		int r = poll(p, (nfds_t)np, timeout);
 		if (r < 0) {
 			if (errno == EINTR)
 				continue;
@@ -900,8 +1175,15 @@ int main(int argc, char **argv)
 		}
 		if (g.sample_pending && now_ns() >= g.sample_due)
 			do_parity_sample();
+		web_handle(p + 2);
 
 		int64_t t = now_ns();
+		if (t - last_web >= 1000000000LL && !g.sample_pending) {
+			clamp_check();
+			if (web.listen_fd >= 0 && web_clients())
+				web_status();
+			last_web = t;
+		}
 		if (g.lock.phase < 0 && !lock_warned && t - g.start_ns > 3000000000LL) {
 			logm("warning: field parity not locked after 3 s (%s) - using phase 0, try --phase 1 if the "
 			     "picture jumps", g.n_fields ? "I2C reads inconsistent" : "no fields from the decoder");
