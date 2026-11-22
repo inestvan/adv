@@ -1,7 +1,7 @@
 #!/bin/sh
 # Install the SPRUT-M grabber on a Raspberry Pi 4 (Raspberry Pi OS, Bookworm or newer):
 # USB webcam (USB-C to the laptop) and a web page: http://169.254.10.1/ over a LAN cable, http://adv.local/ over
-# Wi-Fi or a router; both at once.
+# Wi-Fi or a router; and, with EXTRA_ARGS=--hdmi, the Pi's own HDMI port (lowest delay); all at once.
 # Usage:  sudo sh install.sh [pal|ntsc]        then reboot.
 set -e
 [ "$(id -u)" = 0 ] || { echo "run with sudo: sudo sh install.sh" >&2; exit 1; }
@@ -10,13 +10,15 @@ case "$STD" in pal|ntsc) ;; *) echo "standard must be pal or ntsc" >&2; exit 2 ;
 cd "$(dirname "$0")"
 
 echo "== packages"
-apt-get install -y build-essential linux-libc-dev v4l-utils i2c-tools
+apt-get install -y build-essential linux-libc-dev v4l-utils i2c-tools libdrm-dev
 
 echo "== self-test"
 gcc -O2 -Wall -o /tmp/sprutm-test_weave test_weave.c && /tmp/sprutm-test_weave && rm -f /tmp/sprutm-test_weave
 
 echo "== build"
-gcc -O2 -Wall -Wextra -o /usr/local/bin/sprutm-uvc sprutm-uvc.c
+# -O3: the HDMI output's per-line loops are vectorized (NEON); SPRUTM_HDMI + libdrm: the HDMI output (hdmi.h)
+gcc -O3 -Wall -Wextra -DSPRUTM_HDMI $(pkg-config --cflags libdrm) -o /usr/local/bin/sprutm-uvc sprutm-uvc.c \
+	$(pkg-config --libs libdrm) -lpthread
 install -m 755 sprutm-gadget.sh /usr/local/sbin/sprutm-gadget.sh
 install -d /usr/local/share/sprutm
 install -m 644 www/index.html /usr/local/share/sprutm/index.html
@@ -66,4 +68,4 @@ systemctl daemon-reload
 systemctl enable sprutm-gadget.service sprutm-uvc.service
 echo "== done: standard $STD, config.txt updated (backup: $CFG.sprutm-bak). Now: sudo reboot"
 echo "   after the reboot: USB webcam \"UVC Camera\"; the page: http://169.254.10.1/ (LAN cable),"
-echo "   http://$(hostname).local/ (Wi-Fi or router)"
+echo "   http://$(hostname).local/ (Wi-Fi or router); HDMI: add --hdmi to EXTRA_ARGS in /etc/default/sprutm-grabber"

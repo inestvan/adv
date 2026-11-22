@@ -8,5 +8,6 @@ FORMAT=nv12
 # (as many fields as it carries). 0 = off
 WEB_PORT=80
 # Extra options of sprutm-uvc, e.g. "--swap" (lines swapped), "--invert-phase" (motion jerks back and forth),
-# "-v" (statistics in the journal every 5 s)
+# "-v" (statistics in the journal every 5 s), "--hdmi" (video on the Pi's HDMI port too, lowest delay),
+# "--peaking 245" (sharper), "--comb3d" (3D comb: fine detail; the USB webcam then shows fine dots)
 EXTRA_ARGS=

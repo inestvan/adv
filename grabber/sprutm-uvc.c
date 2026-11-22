@@ -102,6 +102,8 @@ static struct {
 	int sub_fd;			/* decoder subdevice, kept open for the web page controls */
 	int peaking;			/* --peaking: luma peaking gain (reg 0xFB) set at start, -1 = leave as is */
 	int comb3d;			/* --comb3d: decoder line comb off at start, for the web page's 3D comb */
+	int hdmi;			/* --hdmi: video straight to the Pi's HDMI port (hdmi.h) */
+	char hdmi_mode[32];		/* --hdmi-mode WxH@R */
 	/* geometry */
 	unsigned fw, fh, fbpl;		/* field from unicam */
 	unsigned W, H;			/* frame to the host */
@@ -722,6 +724,25 @@ static void open_uvc(void)
 	fill_streaming_control(&g.commit);
 }
 
+#ifdef SPRUTM_HDMI
+#include "hdmi.h"
+#else
+static void hdmi_set_comb(int on)
+{
+	(void)on;
+}
+static int hdmi_start(const char *mode)
+{
+	(void)mode;
+	logm("warning: built without HDMI output (needs libdrm-dev and -DSPRUTM_HDMI, see install.sh)");
+	return -1;
+}
+static void hdmi_field(uint32_t seq, const uint8_t *data, unsigned w, unsigned lines, unsigned bpl, int top)
+{
+	(void)seq, (void)data, (void)w, (void)lines, (void)bpl, (void)top;
+}
+#endif
+
 /* ------------------------------------------------------------------ fields -> frames */
 
 static void weave(uint8_t *frame, const uint8_t *field, int top)
@@ -735,10 +756,14 @@ static void weave(uint8_t *frame, const uint8_t *field, int top)
 static void field_done(uint32_t seq, const uint8_t *data)
 {
 	g.n_fields++;
-	if (web.listen_fd >= 0) {
+	if (web.listen_fd >= 0 || g.hdmi) {
 		int locked = g.lock.phase >= 0;
 		int wodd = field_is_odd(seq, (locked ? g.lock.phase : 0) ^ g.invert);
-		web_field(seq, data, g.fw, g.fh, g.fbpl, field_is_top(wodd, g.ntsc, g.swap), locked);
+		int wtop = field_is_top(wodd, g.ntsc, g.swap);
+		if (web.listen_fd >= 0)
+			web_field(seq, data, g.fw, g.fh, g.fbpl, wtop, locked);
+		if (g.hdmi)
+			hdmi_field(seq, data, g.fw, g.fh, g.fbpl, wtop);
 	}
 	if (!g.streaming || g.lock.phase < 0)
 		return;
@@ -934,7 +959,10 @@ static int reg_ctl_set(size_t i, int val)
 	} else {
 		v = (uint8_t)(val < 0 ? 0 : val > 255 ? 255 : val);
 	}
-	return wr_main(reg_ctls[i].reg, v);
+	int e = wr_main(reg_ctls[i].reg, v);
+	if (!e && reg_ctls[i].reg == 0x39)
+		hdmi_set_comb(val != 0);	/* the HDMI output does the 3D comb too */
+	return e;
 }
 
 /* the decoder's V4L2 controls (brightness, contrast, ..., test pattern) as JSON, to one viewer or all */
@@ -1084,6 +1112,8 @@ static void usage(void)
 	     "                     higher = sharper edges (the web page has a slider to find the value)\n"
 	     "  --comb3d           decoder luma line comb off at start: the web page's 3D comb keeps fine detail\n"
 	     "                     (small text) sharp; the USB webcam then shows the colour subcarrier as fine dots\n"
+	     "  --hdmi             video on the Pi's HDMI port too (lowest delay; 50 Hz mode when the monitor has one)\n"
+	     "  --hdmi-mode WxH@R  HDMI mode, e.g. 1280x720@50 (default: the monitor's resolution at 50 Hz)\n"
 	     "  -v                 verbose (twice: log every USB request)");
 }
 
@@ -1097,6 +1127,7 @@ int main(int argc, char **argv)
 		{ "subdev", required_argument, 0, 'S' }, { "uvc", required_argument, 0, 'U' },
 		{ "web-port", required_argument, 0, 'P' }, { "www", required_argument, 0, 'W' },
 		{ "peaking", required_argument, 0, 'K' }, { "comb3d", no_argument, 0, 'C' },
+		{ "hdmi", no_argument, 0, 'D' }, { "hdmi-mode", required_argument, 0, 'M' },
 		{ "help", no_argument, 0, 'h' }, { 0, 0, 0, 0 } };
 	int o;
 	while ((o = getopt_long(argc, argv, "vh", opts, NULL)) != -1) {
@@ -1129,6 +1160,8 @@ int main(int argc, char **argv)
 		case 'W': snprintf(g.www, sizeof g.www, "%s", optarg); break;
 		case 'K': g.peaking = (int)strtol(optarg, NULL, 0) & 255; break;
 		case 'C': g.comb3d = 1; break;
+		case 'D': g.hdmi = 1; break;
+		case 'M': g.hdmi = 1; snprintf(g.hdmi_mode, sizeof g.hdmi_mode, "%s", optarg); break;
 		case 'v': g.verbose++; break;
 		default:
 			usage();
@@ -1165,6 +1198,12 @@ int main(int argc, char **argv)
 		logm("decoder luma peaking (sharpness) = %d (64 = off)", g.peaking);
 	if (g.comb3d && reg_ctl_set(1, 1) == 0)
 		logm("decoder luma line comb off (web page 3D comb)");
+	if (g.hdmi) {
+		uint8_t v;
+		if (rd_main(0x39, &v) == 0)
+			hdmi_set_comb((v & 0x07) == 0x04);
+		hdmi_start(g.hdmi_mode);
+	}
 	logm("running: %s -> %s, fields %ux%u (bpl %u), frames %ux%u %s, parity %s%s%s", g.video,
 	     g.uvc_fd >= 0 ? g.uvc : "(no USB)", g.fw, g.fh, g.fbpl, g.W, g.H, g.nv12 ? "NV12" : "YUY2",
 	     g.fixed_phase >= 0 ? "fixed" : "over I2C", g.invert ? ", inverted" : "", g.swap ? ", swapped" : "");

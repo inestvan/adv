@@ -36,7 +36,7 @@ ERC и DRC (с проверкой соответствия схеме) — 0 о�
 | `docs/datasheets/`, `docs/ref/` | даташит ADV7280 Rev. A, UG-637 Rev. A, AN-1260, THS7314 (SLOS513A), схемы Pi 4 и Camera Module v2.1, overlay/драйвер из ядра Pi |
 | `fab/adv7280m-csi2-gerber.zip` | Gerber (RS-274X, Protel-расширения) + Excellon drill + gbrjob со стеком |
 | `fab/BOM_JLCPCB.csv`, `fab/CPL_JLCPCB.csv` | BOM и позиции в формате JLCPCB (только то, что собирает JLCPCB) |
-| `grabber/` | Pi 4 как USB-вебкамера без сжатия (NV12, яркость бит в бит) и веб-страница с видео по LAN (все поля бит в бит): `sprutm-uvc.c` (захват полей, склейка, UVC), `web.h` + `www/index.html` (страница), `sprutm-gadget.sh`, службы systemd, `install.sh`; см. [docs/usb-grabber.md](docs/usb-grabber.md) |
+| `grabber/` | Pi 4 как USB-вебкамера без сжатия (NV12, яркость бит в бит) и веб-страница с видео по LAN (все поля бит в бит): `sprutm-uvc.c` (захват полей, склейка, UVC), `web.h` + `www/index.html` (страница), `hdmi.h` (вывод на HDMI Pi с минимальной задержкой), `sprutm-gadget.sh`, службы systemd, `install.sh`; см. [docs/usb-grabber.md](docs/usb-grabber.md) |
 | `tools/` | генераторы: `gen_lib.py` → `gen_fp.py` → `gen_sch.py` → `gen_pcb.py` → `route_pcb.py` → `write_pro.py`; `check_nets.py` проверяет нетлист; `fab.sh` делает Gerber/BOM/CPL, `render.sh` — картинки |
 
 Пересборка с нуля (Linux; `gen_pcb.py` и `route_pcb.py` нужен Python с модулем `pcbnew` из KiCad):
