@@ -82,10 +82,12 @@ td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
 				<button data-v="3" class="on" title="Как в телевизоре: где картинка стоит — оба поля склеены (полная чёткость, ничего не прыгает), где движение — строки интерполируются. 50 к/с">Авто 50</button><button data-v="0" title="Каждое поле отдельным кадром, 50 к/с, пропущенные строки интерполируются всегда (мелкие детали и зерно прыгают на полстроки)">Bob 50</button><button data-v="1" title="Два поля склеены построчно, 25 к/с, как есть (гребёнка на движении)">Weave 25</button><button data-v="2" title="Каждое поле, строки просто удвоены">Поле ×2</button>
 			</span></span>
 			<span><span class="label">Показ</span><span class="seg" id="view">
-				<button data-v="0" class="on">Цвет</button><button data-v="1">Яркость</button><button data-v="2" title="Синий: ниже чёрного (Y ≤ 16), красный: выше белого (Y ≥ 235)">Клиппинг</button><button data-v="3" title="Как на AV-мониторе: тени глубже (гамма 1,1) и цвета холоднее — подобрано по фото монитора. Меняет только показ (и PNG — снимок экрана); RAW кадр без изменений. Резкость как у монитора — ползунок «Резкость» ≈ 245">Как ТВ</button>
+				<button data-v="0" class="on">Цвет</button><button data-v="1">Яркость</button><button data-v="2" title="Синий: ниже чёрного (Y ≤ 16), красный: выше белого (Y ≥ 235)">Клиппинг</button><button data-v="3" title="Как на AV-мониторе: тени глубже (гамма 1,1) и цвета холоднее — подобрано по фото монитора. Меняет только показ (и PNG — снимок экрана); RAW кадр без изменений. Резкость как у монитора — «Контуры: как ТВ»">Как ТВ</button>
 			</span></span>
 			<span class="cold hidden" id="coldbox" title="Насколько холоднее цвета в режиме «Как ТВ»: 100 % — как намерено по фото монитора, 0 — без сдвига. Двойной щелчок — 100 %"><span class="label">Холод</span><input type="range" id="cold" min="0" max="200" value="100"><span id="coldv">100 %</span></span>
-			<span><span class="label">Шумодав</span><span class="seg" id="nr" title="Усреднение с предыдущим кадром там, где картинка не меняется (как 3D NR в телевизоре); только в режиме «Авто 50»"><button data-v="1" class="on">вкл</button><button data-v="0">выкл</button></span></span>
+			<span><span class="label">Шумодав</span><span class="seg" id="nr" title="Как 3D-шумодав телевизора: где картинка стоит, новое поле подмешивается к накопленному (рекурсивно, ≈ 7 кадров) — зерно не ползает; где движение — берётся новое поле. Работает во всех режимах"><button data-v="1" class="on">вкл</button><button data-v="0">выкл</button></span></span>
+			<span><span class="label">Контуры</span><span class="seg" id="peak" title="Подчёркивание контуров на странице, после шумодава, как «резкость» телевизора: «как ТВ» = +6 дБ на 3,4 МГц (как резкость декодера 245), но мелкая рябь (шум) не усиливается. Резкость в самом декодере при этом — 64 (выкл.)"><button data-v="0">выкл</button><button data-v="0.5">мягко</button><button data-v="1" class="on">как ТВ</button></span></span>
+			<span><span class="label">Сглаживание</span><span class="seg" id="aa" title="Убирает «лесенку» на почти горизонтальных краях (как скалер телевизора): сглаживает только вдоль края, поперёк не размывает"><button data-v="1" class="on">вкл</button><button data-v="0">выкл</button></span></span>
 			<span><span class="label">3D-гребёнка</span><span class="seg" id="comb" title="Как в хорошем телевизоре: декодер отдаёт яркость без строчной гребёнки (вся мелкая детализация, например мелкий текст, плюс сетка цветовой поднесущей), а страница убирает сетку, складывая поле с тем же полем двумя кадрами раньше — там поднесущая перевёрнута. Где есть движение — сглаживание по 3 точкам. USB-вебкамера в это время показывает сетку"><button data-v="1">вкл</button><button data-v="0" class="on">выкл</button></span></span>
 			<span><span class="label">Края</span><span class="seg" id="crop" title="Обрезать края гашения: по 9 точек слева и справа (активная ширина PAL 702), по 4 строки сверху и снизу (там полстроки и мигающая тёмная строка). Телевизор обрезает края всегда (overscan)"><button data-v="1" class="on">обрезать</button><button data-v="0">весь кадр</button></span></span>
 			<span><span class="label">Растяжение</span><span class="seg" id="scale" title="Чёткое: кадр растягивается до пикселей экрана фильтром Ланцоша (как скалер телевизора) — края резкие, без мыла и лесенки. Мягкое: обычное сглаживание браузера"><button data-v="1" class="on">чёткое</button><button data-v="0">мягкое</button></span></span>
@@ -138,6 +140,9 @@ let mode = 3, view = 0, lines = 288, width = 720, crop = 1, nrOn = 1, cold = 1;
 // the latest; tex[6..9] cleaned fields (3D comb), 2 per parity — tex[6 + 2*f + cleanSlot[f]] is the latest
 const rawSlot = [0, 0], cleanSlot = [0, 0], rawSeq = new Array(6).fill(-100), cleanFb = [];
 let comb3d = 0, combId = 0;
+// recursive noise reduction: accTex[2*f + accSlot[f]] = latest denoised field of parity f (ping-pong pair)
+let progT, progA, locT = {}, locA = {}, accFloat = false, peak = 1.0, aaOn = 1;
+const accTex = [], accFb = [], accSlot = [0, 0], accSeq = [-100, -100], cut = [false, false];
 let cur = 0, need = false;
 const fields = [null, null];		// last raw field (Uint8Array, UYVY) for top (0) and bottom (1)
 const seqs = [-1, -1];
@@ -149,8 +154,9 @@ void main() { vec2 p = vec2(gl_VertexID == 1 ? 3.0 : -1.0, gl_VertexID == 2 ? 3.
 const FS = `#version 300 es
 precision highp float; precision highp int;
 uniform sampler2D uTop, uBot, uTopP, uBotP;	// latest top/bottom field, and the one before each (P)
-uniform int uMode, uCur, uView, uLines, uH, uW, uX0, uY0, uNR;
-uniform float uCold;
+uniform sampler2D uTopN, uBotN;			// the same latest fields after the recursive noise reduction
+uniform int uMode, uCur, uView, uLines, uH, uW, uX0, uY0, uTNR;
+uniform float uCold, uPeak, uCore0, uCore1, uMotGain;	// uMotGain: motion sensitivity (1 at decoder peaking 245, 2 at 64)
 out vec4 o;
 vec3 fetchT(int f, bool prev, int x, int row) {
 	row = clamp(row, 0, uLines - 1); x = clamp(x, 0, uW - 1);
@@ -160,10 +166,22 @@ vec3 fetchT(int f, bool prev, int x, int row) {
 	return vec3((x & 1) == 1 ? t.a : t.g, t.r, t.b);	// U Y0 V Y1
 }
 vec3 fetch(int f, int x, int row) { return fetchT(f, false, x, row); }
-// temporal noise reduction: average with the same line one frame earlier where it did not change
-vec3 nr(vec3 a, vec3 b) {
-	if (uNR == 0) return a;
-	return mix(a, b, 0.5 * (1.0 - smoothstep(10.0, 30.0, abs(a.x - b.x))));
+// the picture values: the noise-reduced field (recursive NR), or the field as cleaned
+vec3 src(int f, int x, int row) {
+	if (uTNR == 0) return fetch(f, x, row);
+	row = clamp(row, 0, uLines - 1); x = clamp(x, 0, uW - 1);
+	vec4 t = (f == 0 ? texelFetch(uTopN, ivec2(x >> 1, row), 0) : texelFetch(uBotN, ivec2(x >> 1, row), 0)) * 255.0;
+	return vec3((x & 1) == 1 ? t.a : t.g, t.r, t.b);
+}
+// page peaking (contours), after the noise reduction: band-pass (2Y[x] - Y[x-2] - Y[x+2]) / 4 = +6 dB at 3.4 MHz for
+// uPeak 1 (the shape of the decoder's peaking at 245), cored: changes smaller than uCore0..uCore1 (noise) not boosted
+vec3 val(int f, int x, int row) {
+	vec3 c = src(f, x, row);
+	if (uPeak > 0.0) {
+		float d = 0.25 * (2.0 * c.x - src(f, x - 2, row).x - src(f, x + 2, row).x);
+		c.x += uPeak * d * smoothstep(uCore0, uCore1, abs(d));
+	}
+	return c;
 }
 float dY(int f, int x, int row) { return fetch(f, x, row).x - fetchT(f, true, x, row).x; }	// luma change over a frame
 // Motion at a missing line: the change over one frame of the opposite field at that line and of the current field
@@ -190,23 +208,24 @@ void main() {
 	if (uMode == 3) {
 		// motion adaptive (what a TV does): still parts woven from both fields, moving parts interpolated.
 		// The clamp keeps the woven pixel where nothing moves (de = 0) and lets interpolation in as motion grows.
+		// Motion is judged on the cleaned fields; the values come from the noise-reduced ones.
 		int f = uCur, op = 1 - f, r = y >> 1;
-		if ((y & 1) == f) yuv = nr(fetch(f, x, r), fetchT(f, true, x, r));
+		if ((y & 1) == f) yuv = val(f, x, r);
 		else {
 			int ra = f == 0 ? r : r - 1, rb = ra + 1;	// current-field lines above and below
-			vec3 sp = 0.5 * (fetch(f, x, ra) + fetch(f, x, rb));
-			vec3 wv = nr(fetch(op, x, r), fetchT(op, true, x, r));
-			float de = max(motion(f, op, x, r, ra) - 4.0, 0.0) * 4.0;
+			vec3 sp = 0.5 * (val(f, x, ra) + val(f, x, rb));
+			vec3 wv = val(op, x, r);
+			float de = max(motion(f, op, x, r, ra) * uMotGain - 4.0, 0.0) * 4.0;
 			yuv = clamp(sp, wv - de, wv + de);
 		}
 	} else if (uMode == 1) {
-		yuv = fetch(y & 1, x, y >> 1);
+		yuv = val(y & 1, x, y >> 1);
 	} else {
 		int f = uCur;
-		if ((y & 1) == f) yuv = fetch(f, x, y >> 1);
+		if ((y & 1) == f) yuv = val(f, x, y >> 1);
 		else {
 			int r0 = f == 0 ? (y >> 1) : (y >> 1) - 1;
-			yuv = uMode == 2 ? fetch(f, x, f == 0 ? r0 : r0 + 1) : 0.5 * (fetch(f, x, r0) + fetch(f, x, r0 + 1));
+			yuv = uMode == 2 ? val(f, x, f == 0 ? r0 : r0 + 1) : 0.5 * (val(f, x, r0) + val(f, x, r0 + 1));
 		}
 	}
 	float Y = yuv.x, u = yuv.y - 128.0, v = yuv.z - 128.0;
@@ -271,6 +290,102 @@ void main() {
 	vec4 v = texelFetch(uRaw, c, 0);
 	o = vec4(v.r, cleanY(c.x * 2, c.y) / 255.0, v.b, cleanY(c.x * 2 + 1, c.y) / 255.0);
 }`;
+// pass 1b, once per arriving field, after FS_CLEAN: recursive (IIR) motion-adaptive temporal noise reduction, as the
+// 3D NR of a TV. Per parity: acc = acc + k * (field - acc). k = uKmin where the picture stands (noise averaged over
+// ~2/k - 1 frames), rising to 1 where it changed. "Changed" = the signed mean of (field - acc) over 5 px x 3 lines
+// (noise cancels, a real change does not), or the 3-px mean change beyond uTpx (fine moving texture whose signs
+// cancel), or a chroma change. Chroma: the new field's U/V smoothed [1 2 1] over neighbouring pairs, and a lower kmin.
+const FS_TNR = `#version 300 es
+precision highp float; precision highp int;
+uniform sampler2D uCur, uAcc;	// cleaned field n; accumulator of the same parity after field n-2
+uniform int uReset;		// 1: no valid history (start, skipped field, scene cut, NR off) -> copy
+uniform float uKmin, uKminC, uT0, uT1, uTpx, uCw;
+out vec4 o;
+vec4 T(sampler2D s, int x, int y) {
+	ivec2 sz = textureSize(s, 0);
+	return texelFetch(s, ivec2(clamp(x, 0, sz.x - 1), clamp(y, 0, sz.y - 1)), 0) * 255.0;
+}
+void main() {
+	ivec2 c = ivec2(gl_FragCoord.xy);	// one texel = U Y0 V Y1
+	vec4 cur = T(uCur, c.x, c.y), acc = T(uAcc, c.x, c.y);
+	if (uReset == 1) { o = cur / 255.0; return; }
+	float d[18];		// luma change of pixels 2c-2 .. 2c+3 (k = 0..5) on lines y-1 .. y+1 (l): d[6 * l + k]
+	vec2 dc = vec2(0.0);	// chroma change of this pair, summed over the 3 lines
+	vec2 cl = vec2(0.0), cr = vec2(0.0);	// chroma of the left / right pair, this line
+	for (int dy = -1; dy <= 1; dy++)
+		for (int i = -1; i <= 1; i++) {
+			vec4 n = T(uCur, c.x + i, c.y + dy), e = n - T(uAcc, c.x + i, c.y + dy);
+			int j = 6 * (dy + 1) + 2 * (i + 1);
+			d[j] = e.g; d[j + 1] = e.a;
+			if (i == 0) dc += e.rb;
+			if (dy == 0 && i == -1) cl = n.rb;
+			if (dy == 0 && i == 1) cr = n.rb;
+		}
+	float mc = uCw * max(abs(dc.x), abs(dc.y)) / 3.0;
+	vec2 a;
+	for (int p = 0; p < 2; p++) {		// pixel 2c + p: window k = p .. p+4, its 3-px mean k = p+1 .. p+3
+		float s = 0.0;
+		for (int l = 0; l < 3; l++)
+			for (int k = 0; k < 5; k++) s += d[6 * l + p + k];
+		float mp = abs(d[7 + p] + d[8 + p] + d[9 + p]) / 3.0 - uTpx;
+		a[p] = smoothstep(uT0, uT1, max(max(abs(s) / 15.0, mp), mc));
+	}
+	vec2 k = mix(vec2(uKmin), vec2(1.0), a);
+	float kc = mix(uKminC, 1.0, max(a.x, a.y));
+	vec2 cc = 0.25 * (cl + cr) + 0.5 * cur.rb;
+	o = vec4(mix(acc.r, cc.x, kc), mix(acc.g, cur.g, k.x), mix(acc.b, cc.y, kc), mix(acc.a, cur.a, k.y)) / 255.0;
+}`;
+const FS_AA = `#version 300 es
+precision highp float; precision highp int;
+// pass 1b: smooth the staircase of near-horizontal edges, as a TV's scaler does. A 576-line picture of a slightly
+// sloped edge is a staircase of 1-line steps (camera sampling, not a deinterlacing fault); here the local edge
+// direction comes from the structure tensor of the luma over 9 x 5 pixels, and where the edge is clear (strong,
+// one direction, within ~30 degrees of horizontal) the picture is averaged ALONG the edge (Gaussian, +-8 px,
+// sub-line steps by the bilinear filter of the texture). Across the edge nothing is blurred; text, noise, corners
+// and vertical edges have no single direction or are steep, so they are left alone. 63 texture reads.
+uniform sampler2D uSrc;		// deinterlaced RGB picture at the source size (LINEAR filtering, clamp to edge)
+uniform int uAA;		// 0 off (copy)
+out vec4 o;
+const float K0 = 4.0, K1 = 10.0;	// edge strength (rms luma gradient per pixel, video levels): fade in
+const float C0 = 0.2, C1 = 0.45;	// coherence (0 = no direction .. 1 = one clean edge): fade in
+const float SMAX = 0.6;		// steepest slope smoothed (lines per pixel); faded out from 0.75 * SMAX
+const int N = 8; const float SIG = 4.0;	// taps along the edge: t = -N..N, Gaussian sigma in pixels
+float lum(ivec2 p, ivec2 sz) {
+	return dot(texelFetch(uSrc, clamp(p, ivec2(0), sz - 1), 0).rgb, vec3(0.299, 0.587, 0.114)) * 219.0;
+}
+void main() {
+	ivec2 p = ivec2(gl_FragCoord.xy), sz = textureSize(uSrc, 0);
+	vec4 c0 = texelFetch(uSrc, p, 0);
+	if (uAA == 0) { o = c0; return; }
+	float L[45];			// luma at x-4..x+4, y-2..y+2
+	for (int j = 0; j < 5; j++)
+		for (int i = 0; i < 9; i++) L[j * 9 + i] = lum(p + ivec2(i - 4, j - 2), sz);
+	float xx = 0.0, xy = 0.0, yy = 0.0;	// structure tensor from the gradients of the 8 x 4 cells of 2 x 2 pixels
+	for (int j = 0; j < 4; j++)
+		for (int i = 0; i < 8; i++) {
+			int k = j * 9 + i;
+			float gx = 0.5 * (L[k + 1] - L[k] + L[k + 10] - L[k + 9]);
+			float gy = 0.5 * (L[k + 9] - L[k] + L[k + 10] - L[k + 1]);
+			xx += gx * gx; xy += gx * gy; yy += gy * gy;
+		}
+	xx /= 32.0; xy /= 32.0; yy /= 32.0;
+	float tr = xx + yy, dt = sqrt((xx - yy) * (xx - yy) + 4.0 * xy * xy);
+	float coh = dt / max(tr, 1e-6);
+	float vy = 0.5 * (tr + dt) - xx;		// main gradient direction = (xy, vy); the edge runs along (vy, -xy)
+	float s = -xy / max(vy, 1e-6);			// edge slope: rows per pixel
+	float w = smoothstep(K0, K1, sqrt(tr)) * smoothstep(C0, C1, coh)
+	        * (yy > xx ? 1.0 - smoothstep(0.75 * SMAX, SMAX, abs(s)) : 0.0);
+	if (w <= 0.0) { o = c0; return; }
+	s = clamp(s, -SMAX, SMAX);
+	vec2 isz = 1.0 / vec2(sz);
+	vec3 acc = vec3(0.0); float ws = 0.0;
+	for (int t = -N; t <= N; t++) {
+		float ft = float(t), g = exp(-0.5 * ft * ft / (SIG * SIG));
+		acc += g * textureLod(uSrc, (vec2(p) + 0.5 + vec2(ft, s * ft)) * isz, 0.0).rgb;
+		ws += g;
+	}
+	o = vec4(mix(c0.rgb, acc / ws, w), 1.0);
+}`;
 // pass 2/3: scale the picture to the screen pixels, separable Lanczos-3 (horizontal pass, then vertical)
 const FS_SCALE = `#version 300 es
 precision highp float; precision highp int;
@@ -307,7 +422,10 @@ void main() {
 	o = vec4(clamp(acc.rgb / ws, 0.0, 1.0), 1.0);
 }`;
 let prog, prog2, progC, tex = [], loc = {}, loc2 = {}, locC = {}, sharp = 1, px11 = 0;
-const fb = [null, null], fbTex = [null, null], fbDim = [[0, 0], [0, 0]];	// 0: picture at source size, 1: after the horizontal pass
+const fb = [null, null, null], fbTex = [null, null, null], fbDim = [[0, 0], [0, 0], [0, 0]];
+// render targets: 0 picture at the source size (unit 6), 1 after the horizontal scaling pass (unit 7),
+// 2 picture after the along-edge anti-aliasing (unit 12)
+const fbUnit = (i) => i < 2 ? 6 + i : 12;	// 0: picture at source size, 1: after the horizontal pass
 let srcW = 702, srcH = 568, outRect = [0, 0, 1, 1];
 function sh(type, src) {
 	const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
@@ -322,10 +440,11 @@ function link(fs) {
 	return p;
 }
 function initGL() {
-	prog = link(FS); prog2 = link(FS_SCALE); progC = link(FS_CLEAN);
+	prog = link(FS); prog2 = link(FS_SCALE); progC = link(FS_CLEAN); progT = link(FS_TNR); progA = link(FS_AA);
+	accFloat = !!gl.getExtension("EXT_color_buffer_float");	// RGBA16F accumulator; RGBA8 works too (wall noise +4 %)
 	gl.useProgram(prog);
-	for (const n of ["uTop", "uBot", "uTopP", "uBotP", "uMode", "uCur", "uView", "uLines", "uH", "uW", "uX0", "uY0", "uNR", "uCold"])
-		loc[n] = gl.getUniformLocation(prog, n);
+	for (const n of ["uTop", "uBot", "uTopP", "uBotP", "uTopN", "uBotN", "uMode", "uCur", "uView", "uLines", "uH", "uW", "uX0",
+		"uY0", "uTNR", "uCold", "uPeak", "uCore0", "uCore1", "uMotGain"]) loc[n] = gl.getUniformLocation(prog, n);
 	for (let i = 0; i < 10; i++) {
 		tex[i] = gl.createTexture();
 		gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[i]);
@@ -337,11 +456,29 @@ function initGL() {
 	gl.useProgram(progC);
 	for (const n of ["uRaw", "uOld", "uComb"]) locC[n] = gl.getUniformLocation(progC, n);
 	gl.uniform1i(locC.uRaw, 4); gl.uniform1i(locC.uOld, 5);
+	gl.useProgram(prog);
+	gl.uniform1i(loc.uTopN, 8); gl.uniform1i(loc.uBotN, 9);
+	gl.uniform1f(loc.uCore0, 2.0); gl.uniform1f(loc.uCore1, 6.0);	// coring of the page peaking (Y levels of the band-pass)
+	gl.useProgram(progT);
+	for (const n of ["uCur", "uAcc", "uReset", "uKmin", "uKminC", "uT0", "uT1", "uTpx", "uCw"]) locT[n] = gl.getUniformLocation(progT, n);
+	gl.uniform1i(locT.uCur, 10); gl.uniform1i(locT.uAcc, 11);
+	gl.uniform1f(locT.uKmin, 0.25); gl.uniform1f(locT.uKminC, 0.2);	// still areas: ~7 frames averaged (luma), ~9 (chroma)
+	gl.uniform1f(locT.uT0, 1.5); gl.uniform1f(locT.uT1, 4.0); gl.uniform1f(locT.uTpx, 6.0); gl.uniform1f(locT.uCw, 0.5);
+	for (let i = 0; i < 4; i++) {
+		accTex[i] = gl.createTexture();
+		gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, accTex[i]);
+		for (const q of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, q, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		accFb[i] = gl.createFramebuffer();
+	}
+	gl.useProgram(progA);
+	locA.uSrc = gl.getUniformLocation(progA, "uSrc"); locA.uAA = gl.getUniformLocation(progA, "uAA");
+	gl.uniform1i(locA.uSrc, 6);
 	gl.useProgram(prog2);
 	for (const n of ["uSrc", "uAxis", "uSharp", "uRect"]) loc2[n] = gl.getUniformLocation(prog2, n);
-	for (let i = 0; i < 2; i++) {		// render targets on texture units 6 and 7
+	for (let i = 0; i < 3; i++) {		// render targets on texture units 6, 7 and 12
 		fbTex[i] = gl.createTexture();
-		gl.activeTexture(gl.TEXTURE6 + i); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
+		gl.activeTexture(gl.TEXTURE0 + fbUnit(i)); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
 		for (const p of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, p, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 		fb[i] = gl.createFramebuffer();
@@ -354,7 +491,7 @@ function initGL() {
 function fbSize(i, w, h) {
 	if (fbDim[i][0] === w && fbDim[i][1] === h) return;
 	fbDim[i] = [w, h];
-	gl.activeTexture(gl.TEXTURE6 + i); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
+	gl.activeTexture(gl.TEXTURE0 + fbUnit(i)); gl.bindTexture(gl.TEXTURE_2D, fbTex[i]);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 	gl.bindFramebuffer(gl.FRAMEBUFFER, fb[i]);
 	gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fbTex[i], 0);
@@ -366,6 +503,7 @@ const aspect = () => px11 ? srcW / srcH : (srcW / 702) * (576 / srcH) * 4 / 3;
 function layout() {
 	srcW = width - 2 * cropX(); srcH = lines * 2 - 2 * cropY();
 	fbSize(0, srcW, srcH);
+	fbSize(2, srcW, srcH);
 	screen.style.aspectRatio = document.fullscreenElement ? "" : String(aspect());
 	const dpr = window.devicePixelRatio || 1;
 	const cw = Math.max(1, Math.round(screen.clientWidth * dpr)), ch = Math.max(1, Math.round(screen.clientHeight * dpr));
@@ -390,7 +528,53 @@ function allocTex() {
 	}
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	rawSeq.fill(-100);
+	allocAcc();
 	layout();
+}
+function allocAcc() {
+	for (let i = 0; i < 4; i++) {
+		gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, accTex[i]);
+		gl.texImage2D(gl.TEXTURE_2D, 0, accFloat ? gl.RGBA16F : gl.RGBA8, width / 2, lines, 0, gl.RGBA,
+			accFloat ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE, null);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, accFb[i]);
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, accTex[i], 0);
+		if (accFloat && gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) { accFloat = false; return allocAcc(); }
+	}
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	accSeq.fill(-100);
+}
+// recursive noise reduction of the field of parity f that just arrived (after cleanField(f))
+function tnrField(f, seq) {
+	const prev = 2 * f + accSlot[f];
+	accSlot[f] ^= 1;
+	const reset = !nrOn || seq - accSeq[f] !== 2 || cut[f];	// NR off, a skipped field, or a scene cut: start afresh
+	accSeq[f] = seq;
+	gl.useProgram(progT);
+	gl.activeTexture(gl.TEXTURE10); gl.bindTexture(gl.TEXTURE_2D, tex[6 + 2 * f + cleanSlot[f]]);
+	gl.activeTexture(gl.TEXTURE11); gl.bindTexture(gl.TEXTURE_2D, accTex[prev]);
+	gl.uniform1i(locT.uReset, reset ? 1 : 0);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, accFb[2 * f + accSlot[f]]); gl.viewport(0, 0, width / 2, lines);
+	gl.drawArrays(gl.TRIANGLES, 0, 3);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+// scene cut: mean |3-px luma sum change| / 3 against the previous raw field of the same parity on a sparse grid
+// (the 3-px sum cancels the subcarrier dots). Recorded: still 1.4-3.9, walking person <= 11.7, cuts 13-27.
+function sceneCut(a, b) {
+	if (!b || a.length !== b.length) return true;
+	const row = width * 2; let s = 0, n = 0;
+	for (let y = 0; y < lines; y += 8)
+		for (let x = 0; x < width - 2; x += 12) {
+			const i = y * row + x * 2 + 1;
+			s += Math.abs(a[i] + a[i + 2] + a[i + 4] - b[i] - b[i + 2] - b[i + 4]); n++;
+		}
+	return s / n / 3 > 16;
+}
+// the deinterlacer's motion test was tuned on fields with the decoder peaking at 245; with less decoder peaking the
+// cleaned fields carry less edge contrast (and less noise), so the test is made more sensitive: x2 at 64, x1 at 245
+function motGain() {
+	const c = ctrlList.find((c) => c.name === "Luma Peaking");
+	const v = c ? c.val : 245;
+	return Math.min(2, Math.max(1, 2 - (v - 64) / 181));
 }
 // a new field of parity f arrived (raw texture already updated): write its cleaned copy
 function cleanField(f) {
@@ -414,16 +598,23 @@ function draw() {
 	}
 	gl.uniform1i(loc.uMode, mode); gl.uniform1i(loc.uCur, cur); gl.uniform1i(loc.uView, view);
 	gl.uniform1i(loc.uLines, lines); gl.uniform1i(loc.uH, srcH); gl.uniform1i(loc.uW, width);
-	gl.uniform1i(loc.uX0, cropX()); gl.uniform1i(loc.uY0, cropY()); gl.uniform1i(loc.uNR, nrOn); gl.uniform1f(loc.uCold, cold);
+	gl.activeTexture(gl.TEXTURE8); gl.bindTexture(gl.TEXTURE_2D, accTex[accSlot[0]]);
+	gl.activeTexture(gl.TEXTURE9); gl.bindTexture(gl.TEXTURE_2D, accTex[2 + accSlot[1]]);
+	gl.uniform1i(loc.uX0, cropX()); gl.uniform1i(loc.uY0, cropY()); gl.uniform1f(loc.uCold, cold);
+	gl.uniform1i(loc.uTNR, nrOn); gl.uniform1f(loc.uPeak, view === 2 ? 0 : peak); gl.uniform1f(loc.uMotGain, motGain());
 	gl.bindFramebuffer(gl.FRAMEBUFFER, fb[0]); gl.viewport(0, 0, srcW, srcH);
+	gl.drawArrays(gl.TRIANGLES, 0, 3);
+	// pass 1b: smooth the staircase of near-horizontal edges (as a TV scaler)
+	gl.useProgram(progA); gl.uniform1i(locA.uAA, aaOn);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, fb[2]); gl.viewport(0, 0, srcW, srcH);
 	gl.drawArrays(gl.TRIANGLES, 0, 3);
 	// pass 2 + 3: scale to the screen pixels
 	gl.useProgram(prog2); gl.uniform1i(loc2.uSharp, sharp);
 	const [x0, y0, w, h] = outRect;
-	let src = 6;
+	let src = 12;
 	if (sharp) {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, fb[1]); gl.viewport(0, 0, w, srcH);
-		gl.uniform1i(loc2.uSrc, 6); gl.uniform1i(loc2.uAxis, 0); gl.uniform4f(loc2.uRect, 0, 0, w, srcH);
+		gl.uniform1i(loc2.uSrc, 12); gl.uniform1i(loc2.uAxis, 0); gl.uniform4f(loc2.uRect, 0, 0, w, srcH);
 		gl.drawArrays(gl.TRIANGLES, 0, 3);
 		src = 7;
 	}
@@ -450,7 +641,9 @@ function onField(buf) {
 	gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex[ri]);
 	gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, w / 2, n, gl.RGBA, gl.UNSIGNED_BYTE, data);
 	rawSeq[ri] = seq;
+	cut[f] = sceneCut(data, fields[f]);
 	cleanField(f);
+	tnrField(f, seq);
 	fields[f] = data; seqs[f] = seq; cur = f; need = true; rx++;
 	if (!noSignal) $("overlay").classList.add("hidden");
 	$("badge").classList.toggle("hidden", !!(flags & 2));
@@ -516,7 +709,7 @@ function onStat(s) {
 // ---------------------------------------------------------------- decoder controls
 const RU = { "Brightness": "Яркость", "Contrast": "Контраст", "Saturation": "Насыщенность", "Hue": "Оттенок",
 	"Fast Switching": "Быстрое переключение входов", "Test Pattern": "Тестовая картинка",
-	"Luma Peaking": "Резкость (контуры; 64 — выкл.)" };
+	"Luma Peaking": "Резкость в декодере (64 — выкл.; лучше «Контуры» на странице)" };
 let ctrlList = [], sendTimer = null, pending = {};
 function sendCtrl(id, v) {
 	pending[id] = v;
@@ -594,7 +787,7 @@ function seg(id, set) {
 	});
 }
 // the viewer's display choices are remembered in this browser (the 3D comb lives in the decoder, not here)
-const PREF = "sprutm.view", PREF_SEGS = ["mode", "view", "nr", "crop", "scale", "aspect"];
+const PREF = "sprutm.view", PREF_SEGS = ["mode", "view", "nr", "peak", "aa", "crop", "scale", "aspect"];
 function savePrefs() {
 	try {
 		const p = { cold: $("cold").value };
@@ -616,6 +809,8 @@ seg("view", (v) => { view = v; $("coldbox").classList.toggle("hidden", v !== 3);
 $("cold").oninput = () => { cold = $("cold").value / 100; $("coldv").textContent = $("cold").value + " %"; need = true; savePrefs(); };
 $("cold").ondblclick = () => { $("cold").value = 100; $("cold").oninput(); };
 seg("nr", (v) => nrOn = v);
+seg("peak", (v) => peak = v);
+seg("aa", (v) => aaOn = v);
 seg("crop", (v) => { crop = v; layout(); });
 seg("scale", (v) => sharp = v);
 seg("comb", (v) => { if (combId) sendCtrl(combId, v); });
@@ -625,7 +820,7 @@ function save(blob, name) { const a = document.createElement("a"); a.href = URL.
 $("png").onclick = () => {		// the picture before scaling, at the source size
 	draw();
 	const px = new Uint8Array(srcW * srcH * 4), row = srcW * 4;
-	gl.bindFramebuffer(gl.FRAMEBUFFER, fb[0]); gl.readPixels(0, 0, srcW, srcH, gl.RGBA, gl.UNSIGNED_BYTE, px);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, fb[2]); gl.readPixels(0, 0, srcW, srcH, gl.RGBA, gl.UNSIGNED_BYTE, px);
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 	const c2 = document.createElement("canvas"); c2.width = srcW; c2.height = srcH;
 	const ctx = c2.getContext("2d"), img = ctx.createImageData(srcW, srcH);
