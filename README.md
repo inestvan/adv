@@ -37,6 +37,7 @@ ERC и DRC (с проверкой соответствия схеме) — 0 о�
 | `fab/adv7280m-csi2-gerber.zip` | Gerber (RS-274X, Protel-расширения) + Excellon drill + gbrjob со стеком |
 | `fab/BOM_JLCPCB.csv`, `fab/CPL_JLCPCB.csv` | BOM и позиции в формате JLCPCB (только то, что собирает JLCPCB) |
 | `grabber/` | Pi 4 как USB-вебкамера без сжатия (NV12, яркость бит в бит) и веб-страница с видео по LAN (все поля бит в бит): `sprutm-uvc.c` (захват полей, склейка, UVC), `web.h` + `www/index.html` (страница), `hdmi.h` (вывод на HDMI Pi с минимальной задержкой), `sprutm-gadget.sh`, службы systemd, `install.sh`; см. [docs/usb-grabber.md](docs/usb-grabber.md) |
+| `case/` | 3D-корпус для печати: SPRUT-M над Raspberry Pi 4 «этажеркой», питание USB-C, видео по LAN и HDMI, гнёзда 3,5 мм IN / TV / GX16, крепёж со склада; OpenSCAD-модель и готовые STL, см. [case/README.md](case/README.md) |
 | `tools/` | генераторы: `gen_lib.py` → `gen_fp.py` → `gen_sch.py` → `gen_pcb.py` → `route_pcb.py` → `write_pro.py`; `check_nets.py` проверяет нетлист; `fab.sh` делает Gerber/BOM/CPL, `render.sh` — картинки |
 
 Пересборка с нуля (Linux; `gen_pcb.py` и `route_pcb.py` нужен Python с модулем `pcbnew` из KiCad):
