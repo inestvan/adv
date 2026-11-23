@@ -104,6 +104,8 @@ static struct {
 	int comb3d;			/* --comb3d: decoder line comb off at start, for the web page's 3D comb */
 	int hdmi;			/* --hdmi: video straight to the Pi's HDMI port (hdmi.h) */
 	char hdmi_mode[32];		/* --hdmi-mode WxH@R */
+	int auto_level;			/* --auto-level: TV-like levels when the decoder's peak-white AGC limits */
+	unsigned hist[256], hist_n;	/* luma histogram of a recent field (for auto_level) */
 	/* geometry */
 	unsigned fw, fh, fbpl;		/* field from unicam */
 	unsigned W, H;			/* frame to the host */
@@ -731,6 +733,10 @@ static void hdmi_set_comb(int on)
 {
 	(void)on;
 }
+static void hdmi_set_levels(int black, int gain)
+{
+	(void)black, (void)gain;
+}
 static int hdmi_start(const char *mode)
 {
 	(void)mode;
@@ -753,9 +759,24 @@ static void weave(uint8_t *frame, const uint8_t *field, int top)
 		weave_field(frame, g.W, g.H, field, g.fw, g.fh, g.fbpl, top);
 }
 
+/* luma histogram of one field (UYVY: Y in the odd bytes), every 4th pixel of every 4th line, without the edges */
+static void luma_hist(const uint8_t *data)
+{
+	unsigned h[256] = { 0 }, n = 0;
+	for (unsigned y = 8; y + 8 < g.fh; y += 4) {
+		const uint8_t *l = data + (size_t)y * g.fbpl;
+		for (unsigned x = 16; x + 16 < g.fw; x += 4, n++)
+			h[l[2 * x + 1]]++;
+	}
+	memcpy(g.hist, h, sizeof h);
+	g.hist_n = n;
+}
+
 static void field_done(uint32_t seq, const uint8_t *data)
 {
 	g.n_fields++;
+	if (g.n_fields % 10 == 0)
+		luma_hist(data);
 	if (web.listen_fd >= 0 || g.hdmi) {
 		int locked = g.lock.phase >= 0;
 		int wodd = field_is_odd(seq, (locked ? g.lock.phase : 0) ^ g.invert);
@@ -935,6 +956,159 @@ static void clamp_check(void)
 		logm("decoder input clamp was off (reg 0x14 = 0x%02x, cleared by the kernel driver): turned on", v);
 }
 
+/* The decoder can get stuck with a bad source (an analog FPV receiver overloaded at close range): it loses the lock
+ * and the black level, the luma sits below black (a black picture with only the colours left), and it stays like that
+ * after the signal is fine again - until the next start-up, where the kernel driver (adv7182_select_input) does the
+ * ADI "reset clamp circuitry" writes: user sub map 2 (map select 0x0E = 0x80), register 0x9C = 0x00, then 0xFF.
+ * The same here when the picture is black or the lock is lost for 2 s, at most every 3 s. */
+static void clamp_reset(void)
+{
+	uint8_t page;
+	if (g.i2c_fd < 0 || i2c_rd(ADV_REG_CTRL, &page))
+		return;
+	i2c_wr(ADV_REG_CTRL, 0x80);
+	i2c_wr(0x9c, 0x00);
+	i2c_wr(0x9c, 0xff);
+	i2c_wr(ADV_REG_CTRL, page);
+}
+
+static int hist_pct(unsigned permille);
+
+static void clamp_watchdog(void)
+{
+	static int bad;
+	static unsigned long resets;
+	static int64_t last;
+	uint8_t s1;
+	if (!g.hist_n || rd_main(0x10, &s1))
+		return;
+	int black = hist_pct(995) < 30, nolock = !(s1 & 0x01);
+	if (!black && !nolock) {
+		bad = 0;
+		return;
+	}
+	int64_t t = now_ns();
+	if (++bad < 4 || t - last < 3000000000LL)
+		return;
+	last = t;
+	bad = 0;
+	clamp_reset();
+	clamp_check();
+	if (++resets <= 5 || resets % 100 == 0)
+		logm("decoder: %s for 2 s - clamp circuitry reset (%lu)", black ? "black picture" : "no lock", resets);
+}
+
+/* --auto-level: TV-like levels for sources the decoder's luma AGC handles badly, e.g. analog 5.8 GHz FPV receivers
+ * (weak sync, OSD whiter than white). With them the AGC's peak-white algorithm (Status 1 bit 3) turns the whole
+ * picture down to a dark Y 1..90, and the other AGC modes (sync-depth AGC, manual gain) lose the lock and then never
+ * find the black level again (the picture stays black until the decoder is re-initialised). So the AGC is left
+ * alone, and the decoder's contrast (0x08, gain around black) and brightness (0x0A, 0.5 code per step) - applied
+ * after the AGC, before the output clip, so nothing is lost - stretch the picture back: the darkest 0.5 % to
+ * Y ~20, the brightest 0.5 % to ~200, a few steps a second. Without peak-white limiting (a normal source) it eases
+ * back to the chip defaults. Written through the V4L2 controls, so the page sliders show the values. */
+#define AL_LO 20
+#define AL_HI 200
+#define AL_ID 0x7ad00100u		/* web page switch "Auto Levels" */
+static int clampi(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+static int hist_pct(unsigned permille)
+{
+	unsigned want = (unsigned)((uint64_t)g.hist_n * permille / 1000), acc = 0;
+	for (int i = 0; i < 256; i++)
+		if ((acc += g.hist[i]) > want)
+			return i;
+	return 255;
+}
+
+static void set_level(uint32_t id, uint8_t reg, int val)
+{
+	if (g.sub_fd >= 0) {
+		struct v4l2_control ct = { .id = id, .value = val };
+		if (xioctl(g.sub_fd, VIDIOC_S_CTRL, &ct) == 0)
+			return;
+	}
+	wr_main(reg, (uint8_t)val);
+}
+
+static int auto_level_engaged;
+static int al_gain = 1000, al_black = 16;	/* software levels after the decoder (HDMI), see auto_level_sw */
+static void web_send_ctrls(struct web_client *to);
+
+static void auto_level_reset(void)
+{
+	al_gain = 1000;
+	al_black = 16;
+	hdmi_set_levels(16, 1000);
+	set_level(V4L2_CID_CONTRAST, 0x08, 128);
+	set_level(V4L2_CID_BRIGHTNESS, 0x0a, 0);
+	auto_level_engaged = 0;
+}
+
+/* The decoder's contrast gives at most x2; a receiver overloaded at close range needs more. The rest is done on the
+ * HDMI output (a luma table; the web page does the same in its shader): gain up to x3 so that the decoder output's
+ * darkest / brightest 0.5 % land on AL_LO / AL_HI, eased in a quarter of the way per call (0.5 s). */
+static void auto_level_sw(int active, int lo, int hi)
+{
+	int gain = al_gain, black = al_black;
+	int tg = 1000, tb = 16;
+	if (active && hi - lo >= 8) {
+		tg = clampi(1000 * (AL_HI - AL_LO) / (hi - lo), 1000, 3000);
+		tb = (lo < 16 ? 16 : lo) - (AL_LO - 16) * 1000 / tg;
+	}
+	int ng = gain + (tg - gain) / 4, nb = black + (tb - black) / 4;
+	if (abs(tg - ng) < 8)
+		ng = tg;
+	if (ng == gain && nb == black)
+		return;
+	al_gain = ng;
+	al_black = nb;
+	hdmi_set_levels(al_black, al_gain);
+}
+
+static void auto_level(void)
+{
+	static int quiet;
+	uint8_t s1, c8, b8;
+	if (!g.auto_level || !g.hist_n || rd_main(0x10, &s1) || rd_main(0x08, &c8) || rd_main(0x0a, &b8))
+		return;
+	int con = c8, bri = (int8_t)b8, ncon = con, nbri = bri;
+	int lo = hist_pct(5), hi = hist_pct(995);
+	auto_level_sw((s1 & 0x09) == 0x09, lo, hi);
+	if ((s1 & 0x09) == 0x09) {		/* in lock, peak-white AGC limiting */
+		quiet = 0;
+		if (hi - lo >= 8) {
+			int k = 1000 * (AL_HI - AL_LO) / (hi - lo);	/* wanted change of the span, per mille */
+			k = clampi(k, 800, 1250);
+			if (k < 970 || k > 1030)
+				ncon = con * k / 1000;
+			int e = AL_LO - lo;	/* codes; e steps = half of the correction (damped) */
+			if (e < -2 || e > 2)
+				nbri = bri + clampi(e, -8, 8);
+		}
+	} else if (auto_level_engaged && ++quiet > 5) {	/* no limiting for 5 s: back to the defaults */
+		ncon = con + clampi(128 - con, -16, 16);
+		nbri = bri + clampi(-bri, -8, 8);
+		if (ncon == 128 && nbri == 0)
+			auto_level_engaged = 0;
+	}
+	ncon = clampi(ncon, 128, 255);
+	nbri = clampi(nbri, -32, 96);
+	if (ncon == con && nbri == bri)
+		return;
+	if (!auto_level_engaged && (s1 & 0x08))
+		logm("auto levels: the decoder's peak-white AGC darkens the picture (Y %d..%d): stretching it", lo, hi);
+	if (s1 & 0x08)
+		auto_level_engaged = 1;
+	if (ncon != con)
+		set_level(V4L2_CID_CONTRAST, 0x08, ncon);
+	if (nbri != bri)
+		set_level(V4L2_CID_BRIGHTNESS, 0x0a, nbri);
+	if (g.verbose)
+		logm("auto levels: Y %d..%d, contrast %d -> %d, brightness %d -> %d", lo, hi, con, ncon, bri, nbri);
+	if (web.listen_fd >= 0 && web_clients())
+		web_send_ctrls(NULL);
+}
+
 /* Decoder settings the kernel driver does not offer as V4L2 controls; written straight to the main register map.
  * mask 0: a plain 0..255 register. mask != 0: an on/off switch, on = (reg & mask) == on, off = those bits 0.
  * Luma Peaking (UG-637 "DNR and luma peaking filter"): boosts luma around 3 MHz, i.e. sharpens edges;
@@ -1019,6 +1193,8 @@ static void web_send_ctrls(struct web_client *to)
 			sb_add(&b, ",\"type\":1,\"min\":0,\"max\":255,\"step\":1,\"def\":%d,\"val\":%d}", reg_ctls[i].def, v);
 		first = 0;
 	}
+	sb_add(&b, "%s{\"id\":%u,\"name\":\"Auto Levels\",\"type\":2,\"min\":0,\"max\":1,\"step\":1,\"def\":1,\"val\":%d}",
+	       first ? "" : ",", AL_ID, g.auto_level);
 	sb_add(&b, "]}");
 	if (b.n >= b.cap)
 		return;
@@ -1030,6 +1206,7 @@ static void web_send_ctrls(struct web_client *to)
 
 static void web_opened(struct web_client *c)
 {
+	web_take(c);			/* the newest window gets the video, the others are paused */
 	if (g.verbose)
 		logm("web: viewer connected (%d)", web_clients());
 	web_send_ctrls(c);
@@ -1040,6 +1217,14 @@ static void web_command(struct web_client *c, char *msg)
 	unsigned id;
 	int val;
 	if (sscanf(msg, "ctrl %u %d", &id, &val) == 2) {
+		if (id == AL_ID) {
+			g.auto_level = val != 0;
+			if (!g.auto_level && auto_level_engaged)
+				auto_level_reset();
+			logm("web: auto levels %s", g.auto_level ? "on" : "off");
+			web_send_ctrls(NULL);
+			return;
+		}
 		for (size_t i = 0; i < sizeof reg_ctls / sizeof reg_ctls[0]; i++)
 			if (reg_ctls[i].id == id) {
 				if (reg_ctl_set(i, val))
@@ -1060,6 +1245,9 @@ static void web_command(struct web_client *c, char *msg)
 		web_send_ctrls(NULL);
 	} else if (!strncmp(msg, "ctrls", 5)) {
 		web_send_ctrls(c);
+	} else if (!strncmp(msg, "take", 4)) {	/* "Смотреть здесь" in a paused window */
+		web_take(c);
+		web_send_ctrls(c);
 	}
 }
 
@@ -1070,7 +1258,7 @@ static void web_status(void)
 	int ok = rd_main(0x10, &s1) == 0 && rd_main(0x12, &s2) == 0 && rd_main(0x13, &s3) == 0;
 	for (int i = 0; i < WEB_MAX_CLIENTS; i++) {
 		struct web_client *c = &web.c[i];
-		if (c->fd < 0 || !c->ws)
+		if (c->fd < 0 || !c->ws || c->paused)
 			continue;
 		char buf[400];
 		struct sbuf b = { buf, 0, sizeof buf };
@@ -1114,6 +1302,8 @@ static void usage(void)
 	     "                     (small text) sharp; the USB webcam then shows the colour subcarrier as fine dots\n"
 	     "  --hdmi             video on the Pi's HDMI port too (lowest delay; 50 Hz mode when the monitor has one)\n"
 	     "  --hdmi-mode WxH@R  HDMI mode, e.g. 1280x720@50 (default: the monitor's resolution at 50 Hz)\n"
+	     "  --auto-level       TV-like levels: when the decoder's peak-white AGC darkens the picture (analog FPV\n"
+	     "                     receivers: weak sync, OSD whiter than white) stretch it back with contrast/brightness\n"
 	     "  -v                 verbose (twice: log every USB request)");
 }
 
@@ -1128,6 +1318,7 @@ int main(int argc, char **argv)
 		{ "web-port", required_argument, 0, 'P' }, { "www", required_argument, 0, 'W' },
 		{ "peaking", required_argument, 0, 'K' }, { "comb3d", no_argument, 0, 'C' },
 		{ "hdmi", no_argument, 0, 'D' }, { "hdmi-mode", required_argument, 0, 'M' },
+		{ "auto-level", no_argument, 0, 'L' },
 		{ "help", no_argument, 0, 'h' }, { 0, 0, 0, 0 } };
 	int o;
 	while ((o = getopt_long(argc, argv, "vh", opts, NULL)) != -1) {
@@ -1162,6 +1353,7 @@ int main(int argc, char **argv)
 		case 'C': g.comb3d = 1; break;
 		case 'D': g.hdmi = 1; break;
 		case 'M': g.hdmi = 1; snprintf(g.hdmi_mode, sizeof g.hdmi_mode, "%s", optarg); break;
+		case 'L': g.auto_level = 1; break;
 		case 'v': g.verbose++; break;
 		default:
 			usage();
@@ -1210,7 +1402,9 @@ int main(int argc, char **argv)
 	if (web.listen_fd >= 0)
 		logm("web page: http://<this Pi>:%d/  (%s/index.html)", g.web_port, g.www);
 
-	int64_t last_stat = now_ns(), last_web = last_stat;
+	if (g.auto_level)
+		logm("auto levels on (TV-like levels when the decoder's peak-white AGC darkens the picture)");
+	int64_t last_stat = now_ns(), last_web = last_stat, last_al = last_stat;
 	int lock_warned = 0;
 	while (!quit) {
 		struct pollfd p[2 + WEB_MAX_CLIENTS + 1] = {
@@ -1249,6 +1443,11 @@ int main(int argc, char **argv)
 			if (web.listen_fd >= 0 && web_clients())
 				web_status();
 			last_web = t;
+		}
+		if (t - last_al >= 500000000LL && !g.sample_pending) {
+			clamp_watchdog();
+			auto_level();
+			last_al = t;
 		}
 		if (g.lock.phase < 0 && !lock_warned && t - g.start_ns > 3000000000LL) {
 			logm("warning: field parity not locked after 3 s (%s) - using phase 0, try --phase 1 if the "

@@ -33,6 +33,7 @@ struct web_client {
 	size_t out_cap, out_len, out_off;
 	char *txt[2];			/* pending text, one per kind (0 status, 1 control list), sent before fields */
 	unsigned long fields_sent, fields_skipped;
+	int paused;			/* another window took the video (web_take): no fields, no status */
 };
 
 static struct {
@@ -270,8 +271,23 @@ static int web_clients(void)
 {
 	int n = 0;
 	for (int i = 0; i < WEB_MAX_CLIENTS; i++)
-		n += web.c[i].fd >= 0 && web.c[i].ws;
+		n += web.c[i].fd >= 0 && web.c[i].ws && !web.c[i].paused;
 	return n;
+}
+
+/* One viewer at a time: each full stream is ~21 MB/s, and two windows on one laptop made both of them lag (the
+ * second one's socket queue grew to ~17 ms of video). The window that connects (or asks with "take") gets the
+ * video; every other one is paused and told so, and can take it back with a button. */
+static void web_take(struct web_client *keep)
+{
+	keep->paused = 0;
+	for (int i = 0; i < WEB_MAX_CLIENTS; i++) {
+		struct web_client *c = &web.c[i];
+		if (c == keep || c->fd < 0 || !c->ws || c->paused)
+			continue;
+		c->paused = 1;
+		web_text(c, "{\"type\":\"taken\"}");
+	}
 }
 
 /* One field to every WebSocket client that is ready for it. */
@@ -282,6 +298,10 @@ static void web_field(uint32_t seq, const uint8_t *data, unsigned w, unsigned li
 		struct web_client *c = &web.c[i];
 		if (c->fd < 0 || !c->ws)
 			continue;
+		if (c->paused) {		/* still deliver its pending text ("taken") */
+			web_send_pending(c);
+			continue;
+		}
 		if (!web_idle(c)) {
 			c->fields_skipped++;
 			continue;

@@ -42,6 +42,8 @@ static struct {
 	int efd;			/* eventfd: a new field for the worker */
 	char mode_req[32];		/* --hdmi-mode WxH@R */
 	volatile int comb;		/* decoder luma line comb off -> 3D comb here (reg 0x39 YCMP = 100) */
+	volatile int lev_on;		/* auto levels beyond the decoder's contrast: luma through lut */
+	uint8_t lut[256];
 	/* the newest field from the capture loop (under mu; the worker takes the latest, older ones are skipped) */
 	uint8_t in[HD_N * 2];
 	int in_lines, in_top, in_new;
@@ -338,6 +340,9 @@ static void hd_render_lines(int y0, int y1)
 				}
 			}
 		}
+		if (hd.lev_on)
+			for (int x = 0; x < HD_W; x++)
+				ly[x] = hd.lut[ly[x]];
 		memcpy(Yp + (size_t)y * b->pitch, ly, HD_W);	/* write-combined memory: whole lines */
 		memcpy(Cp + (size_t)y * b->pitch, lc, HD_W);
 	}
@@ -786,6 +791,20 @@ static void *hd_thread(void *arg)
 static void hdmi_set_comb(int on)
 {
 	hd.comb = on;
+}
+
+/* luma levels on top of the decoder (auto levels): Y' = 16 + (Y - black) * gain / 1000; gain 1000 = off */
+static void hdmi_set_levels(int black, int gain)
+{
+	if (gain <= 1000) {
+		hd.lev_on = 0;
+		return;
+	}
+	for (int i = 0; i < 256; i++) {
+		int v = 16 + (i - black) * gain / 1000;
+		hd.lut[i] = (uint8_t)(v < 1 ? 1 : v > 254 ? 254 : v);
+	}
+	hd.lev_on = 1;
 }
 
 static int hdmi_start(const char *mode_req)

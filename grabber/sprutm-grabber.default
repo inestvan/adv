@@ -9,5 +9,6 @@ FORMAT=nv12
 WEB_PORT=80
 # Extra options of sprutm-uvc, e.g. "--swap" (lines swapped), "--invert-phase" (motion jerks back and forth),
 # "-v" (statistics in the journal every 5 s), "--hdmi" (video on the Pi's HDMI port too, lowest delay),
-# "--peaking 245" (sharper), "--comb3d" (3D comb: fine detail; the USB webcam then shows fine dots)
+# "--peaking 245" (sharper), "--comb3d" (3D comb: fine detail; the USB webcam then shows fine dots),
+# "--auto-level" (TV-like levels when the decoder darkens the picture, e.g. with an analog 5.8 GHz FPV receiver)
 EXTRA_ARGS=
