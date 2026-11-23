@@ -2,3 +2,5 @@
 *.sh text eol=lf
 # Pi-side files of the USB grabber: LF only (sh, systemd and gcc on the Pi)
 grabber/** text eol=lf
+# Windows viewers (not Pi files): stored byte for byte - .exe / .ico binaries, .cmd with CRLF, .ps1 with BOM
+grabber/windows/** -text
